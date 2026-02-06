@@ -100,6 +100,11 @@ export type SiteConfig = {
 		googleAnalyticsId?: string; // Google Analytics ID
 		microsoftClarityId?: string; // Microsoft Clarity ID
 	};
+
+	// RSS 配置
+	rss?: {
+		fullText?: boolean; // 是否输出全文，true=输出全文，false=只输出摘要
+	};
 };
 
 export type Favicon = {

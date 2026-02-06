@@ -151,6 +151,12 @@ export const siteConfig: SiteConfig = {
 		microsoftClarityId: "",
 	},
 
+	// RSS 配置
+	rss: {
+		// 是否输出全文，true=输出全文，false=只输出摘要
+		fullText: false,
+	},
+
 	// 字体配置
 	// 在src/config/fontConfig.ts中配置具体字体
 	font: fontConfig,

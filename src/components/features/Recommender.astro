@@ -1,0 +1,274 @@
+---
+// src/components/features/RecommenderSEO.astro
+// SEO 优化版：服务端预计算推荐结果
+import { getCollection } from "astro:content";
+import { removeFileExtension } from "@utils/url-utils";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+import { siteConfig } from "@/config/siteConfig";
+
+// 扩展 dayjs 插件
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+interface Props {
+	post: {
+		id: string;
+		data: {
+			title: string;
+			tags?: string[];
+			published?: string | Date;
+		};
+	};
+}
+
+const { post } = Astro.props;
+
+// 获取所有文章
+const allPosts = (await getCollection("posts"))
+	.sort((a, b) => {
+		const dateA = new Date(a.data.published);
+		const dateB = new Date(b.data.published);
+		return dateB - dateA;
+	})
+	.map((post) => {
+		const slug = removeFileExtension(post.id);
+		return {
+			title: post.data.title,
+			slug: slug,
+			tags: post.data.tags || [],
+			published: post.data.published,
+		};
+	});
+
+// 当前文章
+const currentPostSlug = removeFileExtension(post.id);
+const currentPost = {
+	title: post.data.title,
+	slug: currentPostSlug,
+	tags: post.data.tags || [],
+	published: post.data.published,
+};
+
+// ========== 服务端计算推荐结果 ==========
+const maxRecommandItemCount = 6;
+const recommendations = [];
+
+// 排除当前文章
+const otherPosts = allPosts.filter(
+	(article) => article.slug !== currentPostSlug,
+);
+
+// 1. 标签匹配推荐（70% 权重）
+let tagMatches = [];
+if (currentPost.tags && currentPost.tags.length > 0) {
+	const currentTags = new Set(currentPost.tags);
+	const now = new Date();
+
+	otherPosts.forEach((article) => {
+		const articleTags = new Set(article.tags || []);
+		const intersection = new Set(
+			[...currentTags].filter((tag) => articleTags.has(tag)),
+		);
+
+		if (intersection.size > 0) {
+			// 计算时间权重（最近6个月的文章权重更高）
+			const articleDate = new Date(article.published);
+			const daysDiff = (now - articleDate) / (1000 * 60 * 60 * 24);
+			const timeWeight = Math.max(0, 1 - daysDiff / 180); // 180天 = 6个月
+
+			tagMatches.push({
+				title: article.title,
+				slug: article.slug,
+				url: `/posts/${article.slug}/`,
+				type: "tag-match",
+				matchingTags: [...intersection],
+				score: intersection.size * 10 + timeWeight * 5,
+				published: article.published,
+			});
+		}
+	});
+
+	tagMatches.sort((a, b) => b.score - a.score);
+}
+
+// 2. 随机推荐（30% 权重）
+const randomPool = otherPosts
+	.filter((article) => {
+		return !tagMatches.some((match) => match.slug === article.slug);
+	})
+	.map((article) => ({
+		title: article.title,
+		slug: article.slug,
+		url: `/posts/${article.slug}/`,
+		type: "random",
+		tags: article.tags || [],
+		published: article.published,
+		score: (article.tags || []).length > 0 ? 3 : 0,
+	}))
+	.sort((a, b) => b.score - a.score || Math.random() - 0.5)
+	.slice(0, Math.max(2, maxRecommandItemCount - tagMatches.length));
+
+// 3. 智能混合
+const tagMatchCount = Math.min(4, tagMatches.length);
+const randomCount = Math.min(2, randomPool.length);
+
+recommendations.push(...tagMatches.slice(0, tagMatchCount));
+recommendations.push(...randomPool.slice(0, randomCount));
+
+// 4. 去重并排序
+const finalResults = recommendations
+	.filter((v, i, a) => a.findIndex((t) => t.title === v.title) === i)
+	.sort((a, b) => {
+		if (a.type === "tag-match" && b.type === "random") return -1;
+		if (a.type === "random" && b.type === "tag-match") return 1;
+		if (a.score !== undefined && b.score !== undefined)
+			return b.score - a.score;
+		return Math.random() - 0.5;
+	})
+	.slice(0, maxRecommandItemCount);
+
+// 5. Fallback
+if (finalResults.length === 0) {
+	const fallbackPosts = otherPosts.slice(0, maxRecommandItemCount);
+	finalResults.push(
+		...fallbackPosts.map((article) => ({
+			title: article.title,
+			url: `/posts/${article.slug}/`,
+			type: "fallback",
+			published: article.published,
+		})),
+	);
+}
+
+// ========== 辅助函数 ==========
+const formatTime = (dateStr: string | Date) => {
+	if (!dateStr) return "";
+
+	// 获取配置的时区，如果为空则使用本地时间
+	const timezone = siteConfig.timezone;
+	const hasTimezone = timezone && timezone.trim() !== "";
+
+	const date = hasTimezone ? dayjs(dateStr).tz(timezone) : dayjs(dateStr);
+	const now = hasTimezone ? dayjs().tz(timezone) : dayjs();
+
+	// 计算天数差（使用 startOf 确保只比较日期，忽略具体时间）
+	const diffDays = now.startOf("day").diff(date.startOf("day"), "day");
+
+	if (diffDays === 0) return "今天";
+	if (diffDays === 1) return "昨天";
+	if (diffDays < 7) return `${diffDays} 天前`;
+	if (diffDays < 30) return `${Math.floor(diffDays / 7)} 周前`;
+	if (diffDays < 365) return `${Math.floor(diffDays / 30)} 月前`;
+	return `${Math.floor(diffDays / 365)} 年前`;
+};
+
+const getTagColor = () => {
+	return "bg-[var(--primary)]/10 text-[var(--primary)] border-[var(--primary)]/20";
+};
+---
+
+<div class="mt-12 pt-8 border-t border-gray-200 dark:border-gray-700">
+  <div class="mb-6 onload-animation">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="text-2xl font-bold text-black/90 dark:text-white/90">推荐文章</h3>
+      <span class="text-sm text-gray-500 dark:text-gray-400">基于标签匹配 · 智能推荐</span>
+    </div>
+
+    {finalResults.length > 0 ? (
+      <div class="space-y-2.5">
+        {finalResults.map((article, index) => {
+          const timeAgo = formatTime(article.published);
+          const tagColor = getTagColor();
+
+          return (
+            <a
+              href={article.url}
+              class="group block relative overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700/50 dark:bg-(--card-bg) hover:border-[var(--primary)]/50 hover:bg-[var(--primary)]/3 hover:translate-x-1 transition-all duration-200 focus:outline-2 focus:outline-[var(--primary)] focus:outline-offset-2"
+            >
+              <div class="relative p-3 md:p-4">
+                <div class="flex items-center gap-3">
+                  {/* 内容区域 */}
+                  <div class="flex-1 min-w-0">
+                    <div class="font-semibold text-base md:text-lg text-black/90 dark:text-white/90 group-hover:text-[var(--primary)] mb-1.5 line-clamp-2 leading-[1.4] min-h-[2.8rem]">
+                      {article.title}
+                    </div>
+
+                    <div class="flex items-center gap-2 text-xs md:text-xs text-gray-500 dark:text-gray-400 overflow-hidden">
+                      {timeAgo && (
+                        <span class="flex-shrink-0">{timeAgo}</span>
+                      )}
+                      {timeAgo && ((article as any).matchingTags?.length > 0 || article.tags?.length > 0) && (
+                        <span class="flex-shrink-0">·</span>
+                      )}
+                      <div class="flex items-center gap-1.5 flex-1 min-w-0 overflow-hidden">
+                        {(article as any).matchingTags && (article as any).matchingTags.length > 0 ? (
+                          <>
+                            <span class={`inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] md:text-xs font-medium ${tagColor} border flex-shrink-0`}>
+                              {(article as any).matchingTags[0]}
+                            </span>
+                            {(article as any).matchingTags.length > 1 && (
+                              <span class={`inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] md:text-xs font-medium ${tagColor} border flex-shrink-0 hidden md:inline-flex`}>
+                                {(article as any).matchingTags[1]}
+                              </span>
+                            )}
+                            {(article as any).matchingTags.length > 2 && (
+                              <span class={`inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] md:text-xs font-medium ${tagColor} border flex-shrink-0 md:hidden`}>
+                                +{(article as any).matchingTags.length - 1}
+                              </span>
+                            )}
+                            {(article as any).matchingTags.length > 3 && (
+                              <span class={`inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] md:text-xs font-medium ${tagColor} border flex-shrink-0 hidden md:inline-flex`}>
+                                +{(article as any).matchingTags.length - 2}
+                              </span>
+                            )}
+                          </>
+                        ) : article.tags && article.tags.length > 0 ? (
+                          <>
+                            <span class={`inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] md:text-xs font-medium ${tagColor} border flex-shrink-0`}>
+                              {article.tags[0]}
+                            </span>
+                            {article.tags.length > 1 && (
+                              <span class={`inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] md:text-xs font-medium ${tagColor} border flex-shrink-0 hidden md:inline-flex`}>
+                                {article.tags[1]}
+                              </span>
+                            )}
+                            {article.tags.length > 2 && (
+                              <span class={`inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] md:text-xs font-medium ${tagColor} border flex-shrink-0 md:hidden`}>
+                                +{article.tags.length - 1}
+                              </span>
+                            )}
+                            {article.tags.length > 3 && (
+                              <span class={`inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] md:text-xs font-medium ${tagColor} border flex-shrink-0 hidden md:inline-flex`}>
+                                +{article.tags.length - 2}
+                              </span>
+                            )}
+                          </>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </a>
+          );
+        })}
+      </div>
+    ) : (
+      <div class="text-center py-8 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700 bg-gradient-to-br from-gray-50 to-white dark:from-gray-800/50 dark:to-gray-900/50">
+        <svg class="w-12 h-12 mx-auto mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+        </svg>
+        <h4 class="text-base font-semibold text-gray-700 dark:text-gray-300 mb-2">暂无相关推荐</h4>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">试试浏览其他文章分类</p>
+        <a href="/posts/" class="inline-flex items-center px-4 py-2 rounded-lg bg-[var(--primary)] text-white font-medium hover:bg-[var(--primary)]/90 transition-colors">
+          浏览所有文章
+          <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+          </svg>
+        </a>
+      </div>
+    )}
+  </div>
+</div>
