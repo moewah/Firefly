@@ -33,8 +33,11 @@ export async function GET(context: APIContext) {
 			pubDate: post.data.published,
 			description: post.data.description || "",
 			link: url(`/posts/${post.id}/`),
-			content: sanitizeHtml(cleanedContent, {
-				allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img"]),
+			// 根据 siteConfig.rss.fullText 决定是否输出全文
+			...(siteConfig.rss?.fullText && {
+				content: sanitizeHtml(cleanedContent, {
+					allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img"]),
+				}),
 			}),
 		});
 	}
