@@ -5,7 +5,12 @@ export const fontConfig = {
 	// 是否预加载字体文件
 	preload: true,
 	// 当前选择的字体，支持多个字体组合
-	selected: ["system"],
+	selected: [
+		"jetbrains-mono-nl",
+		"lxgw-wenkai-mono-gb-screen",
+		//"lxgw-wenkai-screen",
+		"system",
+	],
 
 	// 字体列表
 	fonts: {
@@ -36,23 +41,32 @@ export const fontConfig = {
 			display: "swap" as const,
 		},
 
-		// 小米字体 - MiSans Normal
-		"misans-normal": {
-			id: "misans-normal",
-			name: "MiSans Normal",
-			src: "https://unpkg.com/misans@4.1.0/lib/Normal/MiSans-Normal.min.css",
-			family: "MiSans",
+		// JetBrains Mono NL
+		"jetbrains-mono-nl": {
+			id: "jetbrains-mono-nl",
+			name: "JetBrains Mono NL",
+			src: "https://unpkg.com/jetbrains-mono@1.0.6/css/jetbrains-mono-nl.css?family=JetBrains+Mono+NL:wght@300;400;500;700&display=swap",
+			family: "JetBrains Mono NL",
+			display: "swap" as const,
+		},
+
+		// LXGW WenKai Screen
+		"lxgw-wenkai-screen": {
+			id: "lxgw-wenkai-screen",
+			name: "LXGW WenKai Screen",
+			src: "https://unpkg.com/lxgw-wenkai-screen-webfont@1.7.0/lxgwwenkaigbscreen.css",
+			family: "LXGW WenKai Screen",
 			weight: 400,
 			display: "swap" as const,
 		},
 
-		// 小米字体 - MiSans Semibold
-		"misans-semibold": {
-			id: "misans-semibold",
-			name: "MiSans Semibold",
-			src: "https://unpkg.com/misans@4.1.0/lib/Normal/MiSans-Semibold.min.css",
-			family: "MiSans",
-			weight: 600,
+		// LXGW WenKai Mono GB Screen
+		"lxgw-wenkai-mono-gb-screen": {
+			id: "lxgw-wenkai-mono-gb-screen",
+			name: "LXGW WenKai Mono GB Screen",
+			src: "https://unpkg.com/lxgw-wenkai-screen-web@1.521.0/lxgwwenkaimonogbscreen/result.css",
+			family: "LXGW WenKai Mono GB Screen",
+			weight: 400,
 			display: "swap" as const,
 		},
 	},
