@@ -19,6 +19,7 @@ const len = page.data.length;
 ---
 
 <MainGridLayout>
+  <meta name="robots" content="noindex, follow" slot="head">
   <PostPage page={page} />
   {
     page.total > page.size && (
