@@ -69,9 +69,9 @@ export async function getTagList(): Promise<Tag[]> {
 		});
 	});
 
-	// sort tags
+	// sort tags by count (descending) - hot tags first
 	const keys: string[] = Object.keys(countMap).sort((a, b) => {
-		return a.toLowerCase().localeCompare(b.toLowerCase());
+		return countMap[b] - countMap[a];
 	});
 
 	return keys.map((key) => ({ name: key, count: countMap[key] }));
