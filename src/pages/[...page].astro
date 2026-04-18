@@ -16,10 +16,13 @@ export const getStaticPaths = (async ({ paginate }) => {
 const { page } = Astro.props;
 
 const len = page.data.length;
+
+// 首页不加 noindex，只有分页页面加
+const isFirstPage = page.currentPage === 1;
 ---
 
 <MainGridLayout canonical={new URL("/", Astro.url)}>
-  <meta name="robots" content="noindex, follow" slot="head">
+  {!isFirstPage && <meta name="robots" content="noindex, follow" slot="head">}
   <PostPage page={page} />
   {
     page.total > page.size && (
