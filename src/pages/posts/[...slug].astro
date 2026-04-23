@@ -9,7 +9,7 @@ import License from "@components/misc/License.astro";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import MainGridLayout from "@layouts/MainGridLayout.astro";
-import { getSortedPosts } from "@utils/content-utils";
+import { getSortedPosts, getHubsForPost } from "@utils/content-utils";
 import {
 	getFileDirFromPath,
 	getPostUrlBySlug,
@@ -75,6 +75,8 @@ if (processedImage) {
 }
 
 dayjs.extend(utc);
+
+const belongingHubs = siteConfig.pages.hubs ? await getHubsForPost(entry.id) : [];
 
 const jsonLd = {
 	"@context": "https://schema.org",
@@ -190,6 +192,28 @@ const jsonLd = {
           )
         }
       </div>
+
+      <!-- Hub 专题归属 -->
+      {
+        siteConfig.pages.hubs && belongingHubs.length > 0 && (
+          <div class="onload-animation mb-5">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-sm text-black/50 dark:text-white/50">
+                此文收录于专题：
+              </span>
+              {belongingHubs.map((hub) => (
+                <a
+                  href={`/hubs/${hub.slug}/`}
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-(--primary)/10 hover:bg-(--primary)/20 text-(--primary) text-sm font-medium transition-all hover:scale-105"
+                >
+                  <Icon name="material-symbols:category-rounded" class="text-base" />
+                  {hub.title}
+                </a>
+              ))}
+            </div>
+          </div>
+        )
+      }
 
       <!-- always show cover as long as it has one -->
 

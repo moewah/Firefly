@@ -1,0 +1,21 @@
+{
+  "title": "Firefly 博客搭建指南",
+  "description": "Firefly 主题安装、配置与自定义的完整教程，从部署上线到深度定制，涵盖布局系统、封面图片、评论系统等功能模块。",
+  "slug": "firefly-guide",
+  "icon": "material-symbols:deployed-code",
+  "keywords": ["Firefly", "Astro", "博客搭建", "博客部署", "主题配置"],
+  "hero": {
+    "headline": "Firefly 博客搭建指南",
+    "subheadline": "从零到部署，掌握 Firefly 主题搭建全流程"
+  },
+  "spokes": [
+    { "slug": "firefly" },
+    { "slug": "firefly-layout-system" }
+  ],
+  "config": {
+    "show_publish_date": true,
+    "show_reading_time": true,
+    "show_tags": true,
+    "grid_layout": true
+  }
+}

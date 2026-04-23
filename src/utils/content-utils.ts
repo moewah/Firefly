@@ -117,3 +117,40 @@ export async function getCategoryList(): Promise<Category[]> {
 	}
 	return ret;
 }
+
+// Hub 归属反向查询类型
+export type HubReference = {
+	title: string;
+	slug: string;
+	description: string;
+};
+
+// 查找包含指定文章的所有 Hub
+export async function getHubsForPost(articleSlug: string): Promise<HubReference[]> {
+	const hubs = await getCollection("hubs");
+
+	const matchingHubs = hubs.filter((hub) => {
+		const spokes = hub.data.spokes;
+		if (!spokes || spokes.length === 0) return false;
+
+		// 检查是否有 spoke 的 slug 匹配当前文章
+		return spokes.some((spoke) => {
+			if (!spoke.slug) return false;
+			// 多种匹配方式：精确匹配、去除扩展名匹配、包含匹配
+			const spokeSlug = spoke.slug.replace(/\.(md|mdx)$/, "");
+			const articleCleanSlug = articleSlug.replace(/\.(md|mdx)$/, "");
+			return (
+				spokeSlug === articleCleanSlug ||
+				spoke.slug === articleSlug ||
+				articleSlug.includes(spoke.slug) ||
+				spoke.slug.includes(articleCleanSlug)
+			);
+		});
+	});
+
+	return matchingHubs.map((hub) => ({
+		title: hub.data.title,
+		slug: hub.data.slug,
+		description: hub.data.description,
+	}));
+}

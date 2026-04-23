@@ -1,0 +1,22 @@
+---
+import { getCollection } from 'astro:content';
+import HubPage from '@components/HubPage.astro';
+import { siteConfig } from '@/config/siteConfig';
+
+// 静态路径生成 - 开关关闭时返回空数组（不构建任何子页面）
+export async function getStaticPaths() {
+  if (!siteConfig.pages.hubs) {
+    return []; // 不生成任何 Hub 子页面
+  }
+
+  const hubs = await getCollection('hubs');
+  return hubs.map(hub => ({
+    params: { slug: hub.data.slug },
+    props: { hub },
+  }));
+}
+
+const { hub } = Astro.props;
+---
+
+{siteConfig.pages.hubs && hub && <HubPage hub={hub} />}

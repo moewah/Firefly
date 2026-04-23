@@ -14,6 +14,17 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 		// 主页
 		LinkPreset.Home,
 
+		// 专题聚合（Hub-Spoke 索引页） - 在归档前显示
+		...(siteConfig.pages.hubs
+			? [
+					{
+						name: "专题",
+						url: "/hubs/",
+						icon: "material-symbols:category-search",
+					} as NavBarLink,
+				]
+			: []),
+
 		// 归档
 		LinkPreset.Archive,
 	];

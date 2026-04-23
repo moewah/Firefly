@@ -73,6 +73,7 @@
 
 ### Page Components
 - [x] **Guestbook** - Supports guestbook page
+- [x] **Hub-Spoke** - Topic-based article aggregation pages, supports manual/auto spoke modes
 - [x] **Announcement Bar** - Supports sidebar announcement notification
 - [x] **Mascot** - Supports both Spine and Live2D animation engines
 - [x] **Site Statistics** - Displays article, category, tag counts, total word count, etc.
@@ -160,6 +161,28 @@ If you have useful features and optimizations, please submit a [Pull Request](ht
 ## 📖 Configuration
 
 > 📚 **Detailed Configuration Documentation**: Check [Firefly Documentation](https://docs-firefly.cuteleaf.cn/) for complete configuration guide
+
+### Enabling Hub-Spoke Feature
+
+Hub-Spoke is a topic-based article aggregation feature that allows you to organize related posts into专题 pages. To enable:
+
+1. Set `pages.hubs: true` in `src/config/siteConfig.ts`
+2. Create JSON config files in `src/content/hubs/` directory
+
+**Quick Example:**
+```json
+{
+  "title": "My Topic Hub",
+  "description": "A collection of related articles",
+  "slug": "my-topic",
+  "spokes": [
+    { "slug": "article-slug-1" },
+    { "slug": "article-slug-2" }
+  ]
+}
+```
+
+> 📄 **Detailed Configuration**: See [Hub-Spoke Configuration Guide](./docs/hub-spoke-configuration.md) for complete schema and examples
 
 ### Setting Website Language
 
