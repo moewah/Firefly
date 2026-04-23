@@ -27,33 +27,30 @@ const sortedHubs = hubs.sort((a, b) => a.data.slug.localeCompare(b.data.slug));
         </p>
       </section>
 
-      <!-- Hub 卡片网格（一行两个，固定高度卡片） -->
+<!-- Hub 卡片网格（一行两个） -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
         {sortedHubs.map(hub => (
           <a
             href={`/hubs/${hub.data.slug}/`}
-            class="group block h-auto md:h-[200px] p-4 md:p-6 rounded-xl bg-neutral-50 dark:bg-neutral-800/50
-                   hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all
-                   border border-neutral-200 dark:border-neutral-700
-                   hover:border-primary/30 dark:hover:border-primary/30 hover:shadow-lg
-                   flex flex-col overflow-hidden"
+            class="card-base group block p-4 md:p-6 hover:bg-(--btn-card-bg-hover) 
+                   flex flex-col overflow-hidden transition-all duration-200 
+                   hover:scale-[1.02] active:scale-[0.98]"
           >
-            <!-- 标题区域（固定两行） -->
+            <!-- 标题区域 -->
             <div class="flex items-center gap-3 mb-2">
-              <Icon name={hub.data.icon || 'material-symbols:category-search'} class="text-xl text-primary dark:text-white shrink-0" />
-              <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100
-                         group-hover:text-primary transition-colors line-clamp-2 leading-tight">
+              <Icon name={hub.data.icon || 'material-symbols:category-search'} class="text-xl text-(--primary) shrink-0" />
+              <h2 class="text-lg font-semibold text-90 group-hover:text-(--primary) transition-colors line-clamp-2 leading-tight">
                 {hub.data.title}
               </h2>
             </div>
 
-            <!-- 描述区域（移动端/平板 2 行，PC 3 行） -->
-            <p class="text-sm text-neutral-600 dark:text-neutral-400 line-clamp-2 lg:line-clamp-3 overflow-hidden">
+            <!-- 描述区域（移动端 2 行，PC 3 行） -->
+            <p class="text-sm text-75 line-clamp-2 lg:line-clamp-3 overflow-hidden">
               {hub.data.description}
             </p>
 
-            <!-- 统计区域（固定底部位置） -->
-            <div class="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-500 mt-auto pt-3 shrink-0">
+            <!-- 统计区域 -->
+            <div class="flex items-center gap-2 text-xs text-50 mt-auto pt-3 shrink-0">
               <Icon name="material-symbols:article-outline" class="text-sm" />
               <span>{hub.data.spokes?.length || 0} 篇文章</span>
             </div>

@@ -198,20 +198,20 @@ const totalReadingTime = Math.round(internalArticles.length * 8); // 假设每�
     <!-- Hero 区域 -->
     <section class="hub-hero mb-8">
       <div class="flex items-center gap-3 mb-3">
-        <Icon name={data.icon || 'material-symbols:category-search'} class="text-2xl text-primary dark:text-white shrink-0" />
-        <h1 class="text-2xl md:text-3xl font-bold text-neutral-900 dark:text-neutral-100">
+        <Icon name={data.icon || 'material-symbols:category-search'} class="text-2xl text-(--primary) shrink-0" />
+        <h1 class="text-2xl md:text-3xl font-bold text-90">
           {data.hero?.headline || data.title}
         </h1>
       </div>
-
+      
       {data.hero?.subheadline && (
-        <p class="text-lg text-neutral-600 dark:text-neutral-400 mb-4">
+        <p class="text-lg text-75 mb-4">
           {data.hero.subheadline}
         </p>
       )}
-
+      
       <!-- 统计信息 -->
-      <div class="flex gap-4 text-sm text-neutral-500 dark:text-neutral-500">
+      <div class="flex gap-4 text-sm text-50">
         <span class="flex items-center gap-1.5">
           <Icon name="material-symbols:article-outline" class="text-base" />
           共 {spokeArticles.length} 篇文章
@@ -235,7 +235,7 @@ const totalReadingTime = Math.round(internalArticles.length * 8); // 假设每�
       {config.grid_layout === false && (
         <div class="space-y-6">
           {spokeArticles.map((article) => (
-            <article class="spoke-card group border-b border-neutral-200 dark:border-neutral-700 pb-6 last:border-0 last:pb-0">
+            <article class="spoke-card group border-b border-(--line-divider) pb-6 last:border-0 last:pb-0">
               {article.type === 'internal' ? (
                 <a
                   href={`/posts/${article.slug}/`}
@@ -243,30 +243,32 @@ const totalReadingTime = Math.round(internalArticles.length * 8); // 假设每�
                 >
                   <!-- 日期 -->
                   {config.show_publish_date && (
-                    <time class="text-sm text-neutral-500 dark:text-neutral-500 block mb-2">
+                    <time class="text-sm text-50 block mb-2">
                       {formatDate(article.published)}
                     </time>
                   )}
-
+                  
                   <!-- 标题 -->
-                  <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100
-                             group-hover:text-(--primary) transition-colors mb-2">
+                  <h2 class="text-lg font-semibold text-90 group-hover:text-(--primary) transition-colors mb-2">
                     {article.title}
                   </h2>
-
+                  
                   <!-- 描述 -->
-                  <p class="text-neutral-600 dark:text-neutral-400 text-sm mb-3 line-clamp-4">
+                  <p class="text-75 text-sm mb-3 line-clamp-4">
                     {article.description}
                   </p>
-
+                  
                   <!-- 标签 -->
                   {config.show_tags && article.tags?.length > 0 && (
                     <div class="flex gap-2 flex-wrap">
                       {article.tags.map((tag: string) => (
-                        <span class="text-xs px-2 py-1 rounded-md bg-neutral-100 dark:bg-neutral-800
-                                     text-neutral-600 dark:text-neutral-400">
-                          {tag}
-                        </span>
+                        <a
+                          href={`/tags/${tag}/`}
+                          class="btn-regular h-6 text-xs px-2 py-1 rounded-md 
+                                transition-all duration-200 hover:scale-105 active:scale-95"
+                        >
+                          #{tag}
+                        </a>
                       ))}
                     </div>
                   )}
@@ -285,13 +287,12 @@ const totalReadingTime = Math.round(internalArticles.length * 8); // 假设每�
                       外部链接
                     </span>
                   )}
-
-                  <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100
-                             group-hover:text-(--primary) transition-colors mb-2">
+                  
+                  <h2 class="text-lg font-semibold text-90 group-hover:text-(--primary) transition-colors mb-2">
                     {article.title}
                   </h2>
-
-                  <p class="text-neutral-600 dark:text-neutral-400 text-sm">
+                  
+                  <p class="text-75 text-sm">
                     {article.description}
                   </p>
                 </a>
@@ -301,39 +302,41 @@ const totalReadingTime = Math.round(internalArticles.length * 8); // 假设每�
         </div>
       )}
 
-      <!-- 网格布局 -->
+<!-- 网格布局 -->
       {config.grid_layout === true && (
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
           {spokeArticles.map((article) => (
-            <article class="spoke-card group rounded-xl border border-neutral-200 dark:border-neutral-700
-                             overflow-hidden hover:shadow-lg transition-all hover:border-(--primary)
-                             h-auto md:h-[200px] flex flex-col">
-
+            <article class="spoke-card card-base group overflow-hidden hover:bg-(--btn-card-bg-hover) 
+                             transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]
+                             flex flex-col">
+              
               <div class="p-4 flex flex-col h-full">
                 {article.type === 'internal' ? (
                   <a href={`/posts/${article.slug}/`} class="block hover:no-underline flex flex-col h-full">
                     {config.show_publish_date && (
-                      <time class="text-xs text-neutral-500 dark:text-neutral-500 block mb-2">
+                      <time class="text-xs text-50 block mb-2">
                         {formatDate(article.published)}
                       </time>
                     )}
-
-                    <h3 class="text-base font-semibold text-neutral-900 dark:text-neutral-100 mb-2
-                               group-hover:text-(--primary) transition-colors line-clamp-2 leading-tight">
+                    
+                    <h3 class="text-base font-semibold text-90 mb-2 group-hover:text-(--primary) transition-colors line-clamp-2 leading-tight">
                       {article.title}
                     </h3>
-
-                    <p class="text-sm text-neutral-600 dark:text-neutral-400 line-clamp-2 lg:line-clamp-3 overflow-hidden">
+                    
+                    <p class="text-sm text-75 line-clamp-2 lg:line-clamp-3 overflow-hidden">
                       {article.description}
                     </p>
-
+                    
                     {config.show_tags && article.tags?.length > 0 && (
                       <div class="flex gap-1 flex-wrap mt-auto pt-3 shrink-0">
                         {article.tags.slice(0, 3).map((tag: string) => (
-                          <span class="text-xs px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800
-                                       text-neutral-500 dark:text-neutral-500">
+                          <a
+                            href={`/tags/${tag}/`}
+                            class="btn-regular h-5 text-xs px-1.5 py-0.5 rounded 
+                                  transition-all duration-200 hover:scale-105 active:scale-95"
+                          >
                             #{tag}
-                          </span>
+                          </a>
                         ))}
                       </div>
                     )}
@@ -343,13 +346,12 @@ const totalReadingTime = Math.round(internalArticles.length * 8); // 假设每�
                     {config.external_link_icon && (
                       <Icon name="material-symbols:link" class="text-(--primary) mb-2 block" />
                     )}
-
-                    <h3 class="text-base font-semibold text-neutral-900 dark:text-neutral-100 mb-2
-                               group-hover:text-(--primary) line-clamp-2 leading-tight">
+                    
+                    <h3 class="text-base font-semibold text-90 mb-2 group-hover:text-(--primary) line-clamp-2 leading-tight transition-colors">
                       {article.title}
                     </h3>
-
-                    <p class="text-sm text-neutral-600 dark:text-neutral-400 line-clamp-2 lg:line-clamp-3 overflow-hidden">
+                    
+                    <p class="text-sm text-75 line-clamp-2 lg:line-clamp-3 overflow-hidden">
                       {article.description}
                     </p>
                   </a>
