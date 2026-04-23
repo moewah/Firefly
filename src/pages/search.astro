@@ -10,6 +10,7 @@ const description = "";
 ---
 
 <MainGridLayout title={title} description={description}>
+    <meta name="robots" content="noindex, follow" slot="head">
     <div class="min-h-[80vh]">
         <AdvancedSearch client:load title={title} description={description} />
     </div>
