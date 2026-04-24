@@ -47,6 +47,23 @@ export const sidebarLayoutConfig: SidebarLayoutConfig = {
 			showOnPostPage: true,
 		},
 		{
+			// 组件类型：专题导航组件
+			type: "hubsNav",
+			// 是否启用该组件
+			enable: true,
+			// 组件位置
+			position: "sticky",
+			// 是否在文章详情页显示
+			showOnPostPage: true,
+			// 是否在非文章详情页显示
+			showOnNonPostPage: true,
+			// 响应式配置
+			responsive: {
+				// 展示阈值：展示文章数量前8的专题
+				collapseThreshold: 8,
+			},
+		},
+		{
 			// 组件类型：分类组件
 			type: "categories",
 			// 是否启用该组件
@@ -156,6 +173,19 @@ export const sidebarLayoutConfig: SidebarLayoutConfig = {
 			enable: true,
 			// 是否在文章详情页显示
 			showOnPostPage: true,
+		},
+		{
+			// 组件类型：专题导航组件
+			type: "hubsNav",
+			// 是否启用该组件
+			enable: true,
+			// 是否在文章详情页显示
+			showOnPostPage: true,
+			// 响应式配置
+			responsive: {
+				// 展示阈值：展示文章数量前8的专题
+				collapseThreshold: 8,
+			},
 		},
 		{
 			// 组件类型：分类组件

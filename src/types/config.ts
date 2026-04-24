@@ -78,8 +78,10 @@ export type SiteConfig = {
 		// 专题聚合页面配置（Hub-Spoke 架构）
 		hubs: {
 			enabled: boolean;
+			path?: string; // 专题索引页路径，默认 /hubs/
 			title: string;
 			description: string;
+			defaultIcon?: string; // 专题默认图标
 		};
 	};
 
@@ -347,6 +349,7 @@ export type CoverImageConfig = {
 export type WidgetComponentType =
 	| "profile"
 	| "announcement"
+	| "hubsNav"
 	| "categories"
 	| "tags"
 	| "sidebarToc"

@@ -121,8 +121,10 @@ export const siteConfig: SiteConfig = {
 		// 专题聚合页面配置（Hub-Spoke 架构）
 		hubs: {
 			enabled: true,
+			path: "/hubs/", // 专题索引页路径
 			title: "专题文章",
-			description: "博客主题内容聚合页，按专题组织相关文章"
+			description: "博客主题内容聚合页，按专题组织相关文章",
+			defaultIcon: "material-symbols:category-outline", // 专题默认图标
 		},
 	},
 

@@ -1,0 +1,79 @@
+---
+import ButtonLink from "@/components/common/ButtonLink.astro";
+import WidgetLayout from "@/components/common/WidgetLayout.astro";
+import { sidebarLayoutConfig, siteConfig } from "@/config";
+import { Icon } from "astro-icon/components";
+import { getCollection } from "astro:content";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+
+// 专题配置
+const hubsConfig = siteConfig.pages?.hubs;
+const hubsEnabled = hubsConfig?.enabled ?? false;
+const hubsPath = hubsConfig?.path ?? "/hubs/";
+const hubsTitle = hubsConfig?.title ?? "专题文章";
+const defaultIcon = hubsConfig?.defaultIcon ?? "material-symbols:category-outline";
+
+// 获取所有 Hub 列表
+const hubs = hubsEnabled ? await getCollection("hubs") : [];
+
+// 按文章数量降序排序（文章多的专题优先展示）
+const sortedHubs = hubs.sort((a, b) => {
+	const countA = a.data.spokes?.length || 0;
+	const countB = b.data.spokes?.length || 0;
+	return countB - countA; // 降序：多的在前
+});
+
+// 从配置中获取显示阈值
+const hubsNavConfig = [
+	...sidebarLayoutConfig.leftComponents,
+	...sidebarLayoutConfig.rightComponents,
+	...sidebarLayoutConfig.mobileBottomComponents,
+].find((c) => c.type === "hubsNav");
+
+const displayLimit = hubsNavConfig?.responsive?.collapseThreshold ?? 8;
+
+// 展示文章数量前 N 的专题
+const displayedHubs = sortedHubs.slice(0, displayLimit);
+
+interface Props {
+	class?: string;
+	style?: string;
+}
+const className = Astro.props.class;
+const style = Astro.props.style;
+---
+
+{hubsEnabled && sortedHubs.length > 0 && (
+	<WidgetLayout 
+		name={hubsTitle} 
+		id="hubsNav" 
+		class={className} 
+		style={style}
+	>
+		{displayedHubs.map((hub) => (
+			<ButtonLink
+				url={`${hubsPath}${hub.data.slug}/`}
+				badge={String(hub.data.spokes?.length || 0)}
+				label={`查看专题：${hub.data.title}`}
+			>
+				<div class="flex items-center gap-2">
+					<Icon 
+						name={hub.data.icon || defaultIcon} 
+						class="text-sm text-(--text-80) shrink-0" 
+					/>
+					<span class="truncate">{hub.data.title}</span>
+				</div>
+			</ButtonLink>
+		))}
+		<div class="expand-btn px-4 mb-1">
+			<a 
+				href={hubsPath}
+				class="btn-plain rounded-lg w-full h-9 flex items-center justify-center gap-2 text-(--primary)"
+			>
+				<Icon name="material-symbols:more-horiz" class="text-[1.75rem]" />
+				{i18n(I18nKey.more)}
+			</a>
+		</div>
+	</WidgetLayout>
+)}

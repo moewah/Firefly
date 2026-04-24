@@ -1,5 +1,6 @@
 ---
 import type { MarkdownHeading } from "astro";
+import HubsNav from "@/components/widget/HubsNav.astro";
 import Advertisement from "@/components/widget/Advertisement.astro";
 import Announcement from "@/components/widget/Announcement.astro";
 import Calendar from "@/components/widget/Calendar.astro";
@@ -47,6 +48,7 @@ const componentMap = {
 	advertisement: Advertisement,
 	stats: SiteStats,
 	calendar: Calendar,
+	hubsNav: HubsNav,
 } satisfies Record<WidgetComponentType, typeof Profile>;
 
 // 获取侧边栏位置
