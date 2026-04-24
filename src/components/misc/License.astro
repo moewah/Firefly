@@ -39,9 +39,9 @@ const postUrl = sourceLink || decodeURIComponent(Astro.url.toString());
       <div class="transition text-black/30 dark:text-white/30 text-sm">
         {i18n(I18nKey.author)}
       </div>
-      <div class="transition text-black/75 dark:text-white/75 line-clamp-2">
+      <a href="/about/" class="link text-(--primary) line-clamp-2">
         {author || profileConf.name}
-      </div>
+      </a>
     </div>
     <div>
       <div class="transition text-black/30 dark:text-white/30 text-sm">
