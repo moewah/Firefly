@@ -75,7 +75,12 @@ export type SiteConfig = {
 		sponsor: boolean; // 赞助页面开关
 		guestbook: boolean; // 留言板页面开关
 		bangumi: boolean;
-		hubs: boolean; // 专题聚合页面开关
+		// 专题聚合页面配置（Hub-Spoke 架构）
+		hubs: {
+			enabled: boolean;
+			title: string;
+			description: string;
+		};
 	};
 
 	// 文章列表布局配置

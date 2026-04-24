@@ -15,7 +15,7 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 		LinkPreset.Home,
 
 		// 专题聚合（Hub-Spoke 索引页） - 在归档前显示
-		...(siteConfig.pages.hubs
+		...(siteConfig.pages.hubs.enabled
 			? [
 					{
 						name: "专题",

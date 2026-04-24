@@ -118,8 +118,12 @@ export const siteConfig: SiteConfig = {
 		guestbook: true,
 		// 番组计划页面开关，含追番、游戏、书籍和音乐，dev调试时只获取一页数据，build才会获取全部数据
 		bangumi: true,
-		// 专题聚合页面开关
-		hubs: true,
+		// 专题聚合页面配置（Hub-Spoke 架构）
+		hubs: {
+			enabled: true,
+			title: "专题文章",
+			description: "博客主题内容聚合页，按专题组织相关文章"
+		},
 	},
 
 	// 文章列表布局配置

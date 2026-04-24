@@ -2,21 +2,112 @@
 import { getCollection } from 'astro:content';
 import HubPage from '@components/HubPage.astro';
 import { siteConfig } from '@/config/siteConfig';
+import { getSortedPosts } from '@utils/content-utils';
 
 // 静态路径生成 - 开关关闭时返回空数组（不构建任何子页面）
 export async function getStaticPaths() {
-  if (!siteConfig.pages.hubs) {
+  if (!siteConfig.pages.hubs.enabled) {
     return []; // 不生成任何 Hub 子页面
   }
-
+  
   const hubs = await getCollection('hubs');
-  return hubs.map(hub => ({
-    params: { slug: hub.data.slug },
-    props: { hub },
-  }));
+  const allPosts = await getSortedPosts(); // 获取所有文章
+  const siteUrl = siteConfig.site_url; // 从配置获取站点 URL
+  
+  return hubs.map(hub => {
+    const data = hub.data;
+    const hubUrl = `${siteUrl}/hubs/${data.slug}/`;
+    const hubsIndexUrl = `${siteUrl}/hubs/`;
+    
+    // 解析 spokes 获取真实标题
+    const spokeItems = (data.spokes || []).map(spoke => {
+      if (spoke.slug) {
+        // 查找文章获取标题
+        const post = allPosts.find(p => 
+          p.id.replace(/\.(md|mdx)$/, '') === spoke.slug ||
+          p.data.slug === spoke.slug ||
+          p.id.includes(spoke.slug)
+        );
+        return {
+          name: spoke.custom_title || (post?.data?.title || ''),
+          url: `${siteUrl}/posts/${spoke.slug}/`
+        };
+      } else if (spoke.url) {
+        // 外部链接
+        return {
+          name: spoke.custom_title || spoke.title || '',
+          url: spoke.url
+        };
+      }
+      return { name: '', url: '' };
+    });
+    
+    // BreadcrumbList JSON-LD
+    const breadcrumbJsonLd = {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "首页",
+          "item": siteUrl
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "专题文章",
+          "item": hubsIndexUrl
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": data.title,
+          "item": hubUrl
+        }
+      ]
+    };
+    
+    // CollectionPage JSON-LD
+    const collectionPageJsonLd = {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "@id": hubUrl,
+      "name": data.title,
+      "description": data.description,
+      "url": hubUrl,
+      "isPartOf": {
+        "@type": "CollectionPage",
+        "@id": hubsIndexUrl,
+        "name": "专题文章"
+      },
+      "mainEntity": {
+        "@type": "ItemList",
+        "@id": `${hubUrl}#itemlist`,
+        "numberOfItems": spokeItems.length,
+        "itemListElement": spokeItems.map((item, index) => ({
+          "@type": "ListItem",
+          "position": index + 1,
+          "name": item.name,
+          "url": item.url
+        }))
+      }
+    };
+    
+    return {
+      params: { slug: data.slug },
+      props: { hub, breadcrumbJsonLd, collectionPageJsonLd }
+    };
+  });
 }
 
-const { hub } = Astro.props;
+const { hub, breadcrumbJsonLd, collectionPageJsonLd } = Astro.props;
 ---
 
-{siteConfig.pages.hubs && hub && <HubPage hub={hub} />}
+{siteConfig.pages.hubs.enabled && hub && (
+  <HubPage hub={hub}>
+    <!-- JSON-LD 注入到 head -->
+    <script type="application/ld+json" slot="head" set:html={JSON.stringify(breadcrumbJsonLd)} />
+    <script type="application/ld+json" slot="head" set:html={JSON.stringify(collectionPageJsonLd)} />
+  </HubPage>
+)}

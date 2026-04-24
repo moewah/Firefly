@@ -76,7 +76,7 @@ if (processedImage) {
 
 dayjs.extend(utc);
 
-const belongingHubs = siteConfig.pages.hubs ? await getHubsForPost(entry.id) : [];
+const belongingHubs = siteConfig.pages.hubs.enabled ? await getHubsForPost(entry.id) : [];
 
 const jsonLd = {
 	"@context": "https://schema.org",
@@ -195,7 +195,7 @@ const jsonLd = {
 
       <!-- Hub 专题归属 -->
       {
-        siteConfig.pages.hubs && belongingHubs.length > 0 && (
+        siteConfig.pages.hubs.enabled && belongingHubs.length > 0 && (
           <div class="onload-animation mb-5">
             <div class="flex flex-wrap items-center gap-2">
               <span class="text-sm text-black/50 dark:text-white/50">
