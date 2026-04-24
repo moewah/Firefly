@@ -3,6 +3,7 @@ import { getCollection, render } from 'astro:content';
 import MainGridLayout from '@layouts/MainGridLayout.astro';
 import { Icon } from 'astro-icon/components';
 import { getSortedPosts } from '@utils/content-utils';
+import { profileConfig } from '@/config/profileConfig';
 
 interface Props {
   hub: {
@@ -186,6 +187,14 @@ function formatDate(date: Date | string): string {
 // 计算 Hub 页面的统计信息
 const internalArticles = spokeArticles.filter(a => a.type === 'internal');
 const totalReadingTime = Math.round(internalArticles.length * 8); // 假设每篇约8分钟
+
+// 计算 Hub 最后更新时间（取所有内部文章中最新的）
+const hubLastUpdated = internalArticles.length > 0
+  ? internalArticles.reduce((latest, article) => {
+      const articleDate = article.updated || article.published;
+      return articleDate > latest ? articleDate : latest;
+    }, internalArticles[0].updated || internalArticles[0].published)
+  : new Date();
 ---
 
 <MainGridLayout
@@ -199,22 +208,26 @@ const totalReadingTime = Math.round(internalArticles.length * 8); // 假设每�
   <div class="card-base px-6 md:px-9 py-8 mb-4">
     
     <!-- Hero 区域 -->
-    <section class="hub-hero mb-8">
+    <section class="hub-hero mb-8" aria-labelledby="hub-title">
       <div class="flex items-center gap-3 mb-3">
         <Icon name={data.icon || 'material-symbols:category-search'} class="text-2xl text-(--primary) shrink-0" />
-        <h1 class="text-2xl md:text-3xl font-bold text-90">
+        <h1 id="hub-title" class="text-2xl md:text-3xl font-bold text-90">
           {data.hero?.headline || data.title}
         </h1>
       </div>
       
       {data.hero?.subheadline && (
-        <p class="text-lg text-75 mb-4">
+        <p class="text-lg text-75 mb-4" role="doc-subtitle">
           {data.hero.subheadline}
         </p>
       )}
       
       <!-- 统计信息 -->
-      <div class="flex gap-4 text-sm text-50">
+      <div class="flex flex-wrap gap-4 text-sm text-50">
+        <span class="flex items-center gap-1.5">
+          <Icon name="material-symbols:person-outline" class="text-base" />
+          作者：<a href="/about/" class="link text-(--primary) font-medium">{profileConfig.name}</a>
+        </span>
         <span class="flex items-center gap-1.5">
           <Icon name="material-symbols:article-outline" class="text-base" />
           共 {spokeArticles.length} 篇文章
@@ -225,6 +238,10 @@ const totalReadingTime = Math.round(internalArticles.length * 8); // 假设每�
             预计阅读 {totalReadingTime} 分钟
           </span>
         )}
+        <span class="flex items-center gap-1.5">
+          <Icon name="material-symbols:update" class="text-base" />
+          最后更新：{formatDate(hubLastUpdated)}
+        </span>
       </div>
     </section>
     
@@ -233,7 +250,7 @@ const totalReadingTime = Math.round(internalArticles.length * 8); // 假设每�
     
     <!-- Spoke 列表 -->
     <section class="spokes-container">
-    
+      
       <!-- 列表布局 -->
       {config.grid_layout === false && (
         <div class="space-y-6">

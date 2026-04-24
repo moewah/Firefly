@@ -3,6 +3,7 @@ import { getCollection } from 'astro:content';
 import HubPage from '@components/HubPage.astro';
 import { siteConfig } from '@/config/siteConfig';
 import { getSortedPosts } from '@utils/content-utils';
+import { profileConfig } from '@/config/profileConfig';
 
 // 静态路径生成 - 开关关闭时返回空数组（不构建任何子页面）
 export async function getStaticPaths() {
@@ -76,6 +77,11 @@ export async function getStaticPaths() {
       "name": data.title,
       "description": data.description,
       "url": hubUrl,
+      "author": {
+        "@type": "Person",
+        "name": profileConfig.name,
+        "url": `${siteUrl}/about/`
+      },
       "isPartOf": {
         "@type": "CollectionPage",
         "@id": hubsIndexUrl,
