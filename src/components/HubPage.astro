@@ -263,7 +263,7 @@ const totalReadingTime = Math.round(internalArticles.length * 8); // 假设每�
                     <div class="flex gap-2 flex-wrap">
                       {article.tags.map((tag: string) => (
                         <a
-                          href={`/tags/${tag}/`}
+                          href={`/archive/?tag=${tag}`}
                           class="btn-regular h-6 text-xs px-2 py-1 rounded-md 
                                 transition-all duration-200 hover:scale-105 active:scale-95"
                         >
@@ -331,7 +331,7 @@ const totalReadingTime = Math.round(internalArticles.length * 8); // 假设每�
                       <div class="flex gap-1 flex-wrap mt-auto pt-3 shrink-0">
                         {article.tags.slice(0, 3).map((tag: string) => (
                           <a
-                            href={`/tags/${tag}/`}
+                            href={`/archive/?tag=${tag}`}
                             class="btn-regular h-5 text-xs px-1.5 py-0.5 rounded 
                                   transition-all duration-200 hover:scale-105 active:scale-95"
                           >
