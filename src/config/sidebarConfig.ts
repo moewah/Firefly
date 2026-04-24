@@ -61,6 +61,8 @@ export const sidebarLayoutConfig: SidebarLayoutConfig = {
 			responsive: {
 				// 展示阈值：展示文章数量前8的专题
 				collapseThreshold: 8,
+				// 是否显示文章数量，默认关闭
+				showArticleCount: false,
 			},
 		},
 		{
@@ -185,6 +187,8 @@ export const sidebarLayoutConfig: SidebarLayoutConfig = {
 			responsive: {
 				// 展示阈值：展示文章数量前8的专题
 				collapseThreshold: 8,
+				// 是否显示文章数量，默认关闭
+				showArticleCount: false,
 			},
 		},
 		{

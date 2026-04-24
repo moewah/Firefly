@@ -77,10 +77,10 @@ export type SiteConfig = {
 		bangumi: boolean;
 		// 专题聚合页面配置（Hub-Spoke 架构）
 		hubs: {
-			enabled: boolean;
+			enabled: boolean; // 是否启用
 			path?: string; // 专题索引页路径，默认 /hubs/
-			title: string;
-			description: string;
+			title?: string; // 专题组件标题，默认 "专题文章"
+			description?: string; // 专题页面描述
 			defaultIcon?: string; // 专题默认图标
 		};
 	};
@@ -111,7 +111,15 @@ export type SiteConfig = {
 
 	// RSS 配置
 	rss?: {
-		fullText?: boolean; // 是否输出全文，true=输出全文，false=只输出摘要
+		fullText: boolean; // 是否输出全文，true=全文，false=摘要
+	};
+
+	// llms.txt 配置（标准格式索引文件）
+	llmsTxt?: {
+		enable: boolean; // 是否启用 llms.txt
+		recentCount?: number; // Recent Posts 数量（最新文章条数，默认 5）
+		showPinnedMark?: boolean; // 是否显示置顶📌标记（默认 true）
+		systemPrompt?: string; // AI Agent System Prompt，显示在文件顶部
 	};
 };
 
@@ -349,13 +357,13 @@ export type CoverImageConfig = {
 export type WidgetComponentType =
 	| "profile"
 	| "announcement"
-	| "hubsNav"
 	| "categories"
 	| "tags"
 	| "sidebarToc"
 	| "advertisement"
 	| "stats"
-	| "calendar";
+	| "calendar"
+	| "hubsNav";
 
 export type WidgetComponentConfig = {
 	type: WidgetComponentType; // 组件类型
@@ -367,6 +375,7 @@ export type WidgetComponentConfig = {
 	responsive?: {
 		hidden?: ("mobile" | "tablet" | "desktop")[]; // 在指定设备上隐藏
 		collapseThreshold?: number; // 折叠阈值
+		showArticleCount?: boolean; // 是否显示文章数量（仅 hubsNav 组件）
 	};
 	customProps?: Record<string, unknown>; // 自定义属性，用于扩展组件功能
 };
@@ -380,6 +389,7 @@ export type MobileBottomComponentConfig = {
 	responsive?: {
 		hidden?: ("mobile" | "tablet" | "desktop")[]; // 在指定设备上隐藏
 		collapseThreshold?: number; // 折叠阈值
+		showArticleCount?: boolean; // 是否显示文章数量（仅 hubsNav 组件）
 	};
 	customProps?: Record<string, unknown>; // 自定义属性，用于扩展组件功能
 };

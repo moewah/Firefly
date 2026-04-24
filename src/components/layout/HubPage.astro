@@ -1,0 +1,570 @@
+---
+import MainGridLayout from '@layouts/MainGridLayout.astro';
+import { Icon } from 'astro-icon/components';
+import { getSortedPosts } from '@utils/content-utils';
+import { getPostUrlBySlug } from '@utils/url-utils';
+import { profileConfig, siteConfig } from '@/config';
+import PostCard from '@/components/layout/PostCard.astro';
+import LayoutSwitchButton from '@/components/controls/LayoutSwitchButton.svelte';
+import Pagination from '@/components/common/Pagination.astro';
+
+interface Props {
+  hub: {
+    id: string;
+    data: {
+      title: string;
+      description: string;
+      slug: string;
+      icon?: string;
+      keywords?: string[];
+      hero?: {
+        headline?: string;
+        subheadline?: string;
+        cover_image?: string;
+      };
+      spokes?: Array<{
+        slug?: string;
+        custom_title?: string;
+        custom_description?: string;
+      }>;
+      auto_spokes?: {
+        enabled: boolean;
+        category?: string;
+        tags?: string[];
+        sort_by?: 'published' | 'updated' | 'title';
+        order?: 'asc' | 'desc';
+        limit?: number;
+      };
+      config?: {
+        show_publish_date?: boolean;
+        show_reading_time?: boolean;
+        show_tags?: boolean;
+        grid_layout?: boolean;
+        sort_by?: 'default' | 'published' | 'updated';
+      };
+    };
+  };
+  currentPage?: number;
+  totalPages?: number;
+  pageSize?: number;
+  canonical?: string;
+}
+
+const { hub, currentPage = 1, totalPages = 1, pageSize = 10, canonical } = Astro.props;
+const data = hub.data;
+
+// 获取所有文章（用于查找内部文章）
+const allPosts = await getSortedPosts();
+
+// 解析 spoke 列表：手动 spokes + auto_spokes 追加（去重）
+let spokeArticles: Array<{
+  entry: any;
+  customTitle?: string;
+  customDescription?: string;
+}> = [];
+const existingSlugs = new Set<string>();
+
+// 1. 处理手动指定的 spokes
+if (data.spokes && data.spokes.length > 0) {
+  spokeArticles = data.spokes.map(spoke => {
+    if (!spoke.slug) return null;
+    
+    // 通过 slug 查找完整 entry
+    const post = allPosts.find(p => 
+      p.id.replace(/\.(md|mdx)$/, '') === spoke.slug ||
+      p.data.slug === spoke.slug ||
+      p.id.includes(spoke.slug)
+    );
+    
+    if (!post) {
+      // 尝试更宽松的匹配
+      const looseMatch = allPosts.find(p => 
+        p.id.toLowerCase().includes(spoke.slug!.toLowerCase())
+      );
+      if (!looseMatch) return null;
+      const resolvedSlug = looseMatch.id.replace(/\.(md|mdx)$/, '');
+      existingSlugs.add(resolvedSlug);
+      return {
+        entry: looseMatch,
+        customTitle: spoke.custom_title,
+        customDescription: spoke.custom_description,
+      };
+    }
+    
+    const resolvedSlug = post.id.replace(/\.(md|mdx)$/, '');
+    existingSlugs.add(resolvedSlug);
+    return {
+      entry: post,
+      customTitle: spoke.custom_title,
+      customDescription: spoke.custom_description,
+    };
+  }).filter(Boolean);
+}
+
+// 2. 处理 auto_spokes（追加模式，去重）
+if (data.auto_spokes?.enabled) {
+  let filtered = [...allPosts];
+  
+  if (data.auto_spokes.category) {
+    filtered = filtered.filter(p => p.data.category === data.auto_spokes.category);
+  }
+  if (data.auto_spokes.tags?.length) {
+    filtered = filtered.filter(p => 
+      data.auto_spokes.tags!.some(tag => p.data.tags?.includes(tag))
+    );
+  }
+  
+  // 排序
+  const sortBy = data.auto_spokes.sort_by || 'published';
+  const order = data.auto_spokes.order || 'desc';
+  filtered = filtered.sort((a, b) => {
+    let cmp = 0;
+    if (sortBy === 'title') {
+      cmp = a.data.title.localeCompare(b.data.title);
+    } else {
+      const aDate = sortBy === 'updated' ? (a.data.updated || a.data.published) : a.data.published;
+      const bDate = sortBy === 'updated' ? (b.data.updated || b.data.published) : b.data.published;
+      cmp = new Date(aDate).getTime() - new Date(bDate).getTime();
+    }
+    return order === 'desc' ? -cmp : cmp;
+  });
+  
+  // 限制数量
+  if (data.auto_spokes.limit) {
+    filtered = filtered.slice(0, data.auto_spokes.limit);
+  }
+  
+  // 追加到 spokeArticles（去重）
+  for (const post of filtered) {
+    const slug = post.id.replace(/\.(md|mdx)$/, '');
+    if (!existingSlugs.has(slug)) {
+      existingSlugs.add(slug);
+      spokeArticles.push({
+        entry: post,
+        customTitle: undefined,
+        customDescription: undefined,
+      });
+    }
+  }
+}
+
+// 3. 根据 config.sort_by 排序（仅对非 default 排序）
+const sortBy = data.config?.sort_by || 'default';
+if (sortBy !== 'default') {
+  spokeArticles = spokeArticles.sort((a, b) => {
+    const aDate = sortBy === 'updated' 
+      ? (a.entry.data.updated || a.entry.data.published) 
+      : a.entry.data.published;
+    const bDate = sortBy === 'updated' 
+      ? (b.entry.data.updated || b.entry.data.published) 
+      : b.entry.data.published;
+    const cmp = new Date(bDate).getTime() - new Date(aDate).getTime(); // 新→旧
+    return cmp;
+  });
+}
+
+// 配置默认值
+const config = {
+  show_publish_date: data.config?.show_publish_date ?? true,
+  show_reading_time: data.config?.show_reading_time ?? true,
+  show_tags: data.config?.show_tags ?? true,
+};
+
+// 分页切片
+const startIndex = (currentPage - 1) * pageSize;
+const endIndex = startIndex + pageSize;
+const paginatedArticles = spokeArticles.slice(startIndex, endIndex);
+
+// 分页 URL 生成函数
+const getHubPageUrl = (page: number) => {
+  if (page === 1) return `/hubs/${data.slug}/`;
+  return `/hubs/${data.slug}/${page}/`;
+};
+
+// 格式化日期
+function formatDate(date: Date | string): string {
+  const d = new Date(date);
+  return d.toLocaleDateString('zh-CN', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+}
+
+// 计算 Hub 页面的统计信息
+const totalReadingTime = Math.round(spokeArticles.length * 8); // 假设每篇约8分钟
+
+// 计算 Hub 最后更新时间（取所有文章中最新的）
+const hubLastUpdated = spokeArticles.length > 0
+  ? spokeArticles.reduce((latest, article) => {
+      const articleDate = article.entry.data.updated || article.entry.data.published;
+      return articleDate > latest ? articleDate : latest;
+    }, spokeArticles[0].entry.data.updated || spokeArticles[0].entry.data.published)
+  : new Date();
+
+// 布局配置（复用 PostPage 的机制）
+const defaultLayout = siteConfig.postListLayout.defaultMode || 'list';
+const initialLayoutClass = defaultLayout === 'grid'
+  ? 'grid grid-cols-1 md:grid-cols-2 gap-4 grid-mode'
+  : 'flex flex-col gap-4 md:gap-4 list-mode';
+
+let delay = 0;
+const interval = 50;
+---
+
+<MainGridLayout
+  title={data.title}
+  description={data.description}
+  keywords={data.keywords}
+  canonical={canonical}
+>
+  <!-- 传递 head slot 内容（JSON-LD 等） -->
+  <slot name="head" slot="head" />
+  
+  <div class="card-base px-6 md:px-9 py-8 mb-4">
+    
+    <!-- Hero 区域 -->
+    <section class="hub-hero mb-8" aria-labelledby="hub-title">
+      <div class="flex items-center justify-between gap-3 mb-3">
+        <div class="flex items-center gap-3">
+          <div class="h-8 w-8 rounded-lg bg-(--primary) flex items-center justify-center text-white dark:text-black/70 shrink-0">
+            <Icon name={data.icon || 'material-symbols:category-search'} class="text-[1.5rem]" />
+          </div>
+          <h1 id="hub-title" class="text-3xl font-bold text-neutral-900 dark:text-neutral-100">
+            {data.hero?.headline || data.title}
+          </h1>
+        </div>
+        
+        <!-- 布局切换按钮 -->
+        <LayoutSwitchButton client:load currentLayout={defaultLayout} />
+      </div>
+      
+      {data.hero?.subheadline && (
+        <p class="text-base text-neutral-600 dark:text-neutral-400 leading-relaxed mb-4" role="doc-subtitle">
+          {data.hero.subheadline}
+        </p>
+      )}
+      
+      <!-- 统计信息 -->
+      <div class="flex flex-wrap gap-4 text-sm text-50">
+        <span class="flex items-center gap-1.5">
+          <Icon name="material-symbols:person-outline" class="text-base" />
+          作者：<a href="/about/" class="link text-(--primary) font-medium">{profileConfig.name}</a>
+        </span>
+        <span class="flex items-center gap-1.5">
+          <Icon name="material-symbols:article-outline" class="text-base" />
+          共 {spokeArticles.length} 篇文章
+        </span>
+        {config.show_reading_time && (
+          <span class="flex items-center gap-1.5">
+            <Icon name="material-symbols:schedule-outline-rounded" class="text-base" />
+            预计阅读 {totalReadingTime} 分钟
+          </span>
+        )}
+        <span class="flex items-center gap-1.5">
+          <Icon name="material-symbols:update" class="text-base" />
+          最后更新：{formatDate(hubLastUpdated)}
+        </span>
+      </div>
+    </section>
+    
+    <!-- 分隔线 -->
+    <div class="border-(--line-divider) border-dashed border-b mb-8"></div>
+    
+    <!-- Spoke 列表容器 -->
+    <section class="spokes-container">
+      <div
+        id="post-list-container"
+        class={`transition-all duration-500 ease-in-out ${initialLayoutClass}`}
+        data-default-layout={defaultLayout}
+        data-both-sidebars="true"
+        data-masonry-enabled="false"
+        data-grid-columns="2"
+      >
+        {paginatedArticles.map((article) => (
+          <PostCard
+            entry={article.entry}
+            title={article.customTitle || article.entry.data.title}
+            tags={article.entry.data.tags}
+            category={article.entry.data.category}
+            published={article.entry.data.published}
+            updated={article.entry.data.updated}
+            url={getPostUrlBySlug(article.entry.id)}
+            image={article.entry.data.image}
+            description={article.customDescription || article.entry.data.description}
+            draft={article.entry.data.draft}
+            pinned={article.entry.data.pinned}
+            class:list="onload-animation post-card-item"
+            style={`animation-delay: calc(var(--content-delay) + ${delay++ * interval}ms);`}
+          />
+        ))}
+      </div>
+    </section>
+    
+    <!-- 分页导航 -->
+    {totalPages > 1 && (
+      <div class="flex justify-center mt-8 onload-animation" style={`animation-delay: calc(var(--content-delay) + ${paginatedArticles.length * 50}ms);`}>
+        <nav class="pagination-nav flex flex-row gap-3 justify-center items-center" aria-label="分页导航">
+          <!-- 上一页 -->
+          <a
+            href={currentPage > 1 ? getHubPageUrl(currentPage - 1) : ''}
+            aria-label={currentPage > 1 ? "上一页" : null}
+            class:list={[
+              "btn-card overflow-hidden rounded-lg text-(--primary) w-11 h-11",
+              { disabled: currentPage <= 1 }
+            ]}
+          >
+            <Icon name="material-symbols:chevron-left-rounded" class="text-[1.75rem]" />
+          </a>
+          
+          <!-- 页码 -->
+          <div class="bg-(--card-bg) flex flex-row rounded-lg items-center text-neutral-700 dark:text-neutral-300 font-bold">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+              p === currentPage
+                ? <div class="h-11 w-11 rounded-lg bg-(--primary) flex items-center justify-center font-bold text-white dark:text-black/70">{p}</div>
+                : <a href={getHubPageUrl(p)} aria-label={`第 ${p} 页`} class="btn-card w-11 h-11 rounded-lg overflow-hidden active:scale-[0.85]">{p}</a>
+            ))}
+          </div>
+          
+          <!-- 下一页 -->
+          <a
+            href={currentPage < totalPages ? getHubPageUrl(currentPage + 1) : ''}
+            aria-label={currentPage < totalPages ? "下一页" : null}
+            class:list={[
+              "btn-card overflow-hidden rounded-lg text-(--primary) w-11 h-11",
+              { disabled: currentPage >= totalPages }
+            ]}
+          >
+            <Icon name="material-symbols:chevron-right-rounded" class="text-[1.75rem]" />
+          </a>
+        </nav>
+      </div>
+    )}
+    
+  </div>
+</MainGridLayout>
+
+<!-- 立即执行脚本：防止刷新时的布局闪烁 -->
+<script is:inline define:vars={{ defaultLayout }}>
+  (function() {
+    const savedLayout = localStorage.getItem('postListLayout');
+
+    if (savedLayout && savedLayout !== defaultLayout) {
+      const container = document.getElementById('post-list-container');
+
+      if (container) {
+        container.style.transition = 'none';
+        container.classList.remove('list-mode', 'grid-mode', 'flex', 'flex-col', 'grid', 'grid-cols-1', 'md:grid-cols-2', 'gap-4', 'md:gap-4');
+
+        if (savedLayout === 'grid') {
+          container.classList.add('grid-mode', 'grid', 'grid-cols-1', 'md:grid-cols-2', 'gap-4');
+        } else {
+          container.classList.add('list-mode', 'flex', 'flex-col', 'gap-4', 'md:gap-4');
+        }
+
+        container.offsetHeight;
+        container.style.transition = '';
+      }
+    }
+  })();
+</script>
+
+<script>
+  // 动态布局切换脚本（简化版，无 masonry）
+  function initLayout() {
+    const postListContainer = document.getElementById("post-list-container");
+    if (!postListContainer) return;
+
+    const screenWidth = window.innerWidth;
+    const isSmallScreen = screenWidth < 1200;
+
+    const savedLayout = localStorage.getItem("postListLayout");
+    const defaultLayout = postListContainer.getAttribute("data-default-layout") || "list";
+    let currentLayout = savedLayout || defaultLayout;
+
+    if (isSmallScreen) {
+      currentLayout = "list";
+    }
+
+    updatePostListLayout(currentLayout);
+  }
+
+  function updatePostListLayout(layout: string) {
+    const postListContainer = document.getElementById("post-list-container");
+    if (!postListContainer) return;
+
+    const isCurrentGrid = postListContainer.classList.contains("grid-mode");
+    const isCurrentList = postListContainer.classList.contains("list-mode");
+    const currentLayout = isCurrentGrid ? "grid" : (isCurrentList ? "list" : null);
+
+    const applyClasses = () => {
+      postListContainer.classList.remove("list-mode", "grid-mode");
+      if (layout === "grid") {
+        postListContainer.classList.add("grid-mode");
+        postListContainer.classList.remove("flex", "flex-col");
+        postListContainer.classList.add("grid", "grid-cols-1", "md:grid-cols-2", "gap-4");
+      } else {
+        postListContainer.classList.add("list-mode");
+        postListContainer.classList.add("flex", "flex-col", "gap-4", "md:gap-4");
+        postListContainer.classList.remove("grid", "grid-cols-1", "md:grid-cols-2");
+      }
+    };
+
+    if (!currentLayout) {
+      applyClasses();
+      return;
+    }
+
+    if (currentLayout === layout) {
+      return;
+    }
+
+    postListContainer.classList.add("layout-switching");
+    
+    setTimeout(() => {
+      applyClasses();
+      requestAnimationFrame(() => {
+        postListContainer.classList.remove("layout-switching");
+      });
+    }, 200);
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    setTimeout(initLayout, 50);
+  });
+
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden) {
+      setTimeout(initLayout, 100);
+    }
+  });
+
+  window.addEventListener("layoutChange", function (event) {
+    const newLayout = (event as CustomEvent).detail.layout;
+    const screenWidth = window.innerWidth;
+    const isSmallScreen = screenWidth < 1200;
+
+    if (isSmallScreen) {
+      updatePostListLayout("list");
+    } else {
+      updatePostListLayout(newLayout);
+    }
+  });
+
+  let resizeTimeout: any;
+  window.addEventListener("resize", function () {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(function () {
+      initLayout();
+    }, 250);
+  });
+
+  document.addEventListener("astro:page-load", function () {
+    setTimeout(initLayout, 50);
+  });
+  
+  document.addEventListener("astro:after-swap", function () {
+    setTimeout(initLayout, 50);
+  });
+
+  setTimeout(initLayout, 0);
+</script>
+
+<style>
+  /* 布局切换动画 */
+  #post-list-container {
+    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+  }
+  
+  #post-list-container.layout-switching {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  /* List Mode 标题字号（复用 PostPage 样式） */
+  #post-list-container.list-mode :global(.post-card-title) {
+    font-size: 1.5rem !important;
+    line-height: 2rem !important;
+  }
+
+  #post-list-container.list-mode :global(.post-card-title::before) {
+    top: 2.25rem !important;
+    height: 1rem !important;
+  }
+
+ /* Grid Mode 标题字号（复用 PostPage 样式） */
+ #post-list-container.grid-mode :global(.post-card-title) {
+   font-size: 1.125rem !important;
+   line-height: 1.75rem !important;
+   margin-bottom: 0.5rem !important;
+ }
+  /* Grid Mode 标题装饰条隐藏 */
+  #post-list-container.grid-mode :global(.post-card-title::before) {
+    display: none !important;
+  }
+
+  /* Grid Mode 进入按钮隐藏 */
+  #post-list-container.grid-mode :global(.post-card-enter-btn) {
+    display: none !important;
+  }
+
+  /* Grid Mode 摘要样式 */
+  #post-list-container.grid-mode :global(.description) {
+    font-size: 0.875rem !important;
+    margin-bottom: 0.75rem !important;
+    padding-right: 0 !important;
+  }
+  /* 网格模式下，有封面的文章，摘要最多显示三行 */
+  #post-list-container.grid-mode :global(.has-cover .description) {
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    -webkit-line-clamp: 3 !important;
+    line-clamp: 3 !important;
+  }
+
+  /* Grid Mode 元数据样式 */
+  #post-list-container.grid-mode :global(.post-meta) {
+    margin-bottom: 0.5rem !important;
+    gap: 0.5rem !important;
+  }
+
+  #post-list-container.grid-mode :global(.post-meta .text-xl) {
+    font-size: 1rem !important;
+    line-height: 1.25rem !important;
+  }
+
+  #post-list-container.grid-mode :global(.meta-icon) {
+    width: 1.5rem !important;
+    height: 1.5rem !important;
+    margin-right: 0.25rem !important;
+  }
+
+  #post-list-container.grid-mode :global(.post-meta .text-sm) {
+    font-size: 0.75rem !important;
+    line-height: 1rem !important;
+  }
+
+  #post-list-container.grid-mode :global(.post-meta .pinned-btn) {
+    padding: 0.25rem 0.375rem !important;
+  }
+
+  /* Grid Mode 卡片布局 */
+  #post-list-container.grid-mode :global(.post-card-wrapper) {
+    flex-direction: column-reverse !important;
+  }
+
+  #post-list-container.grid-mode :global(.post-card-image) {
+    width: 100% !important;
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    border-radius: var(--radius-large) var(--radius-large) 0 0 !important;
+  }
+
+  #post-list-container.grid-mode :global(.post-card-content) {
+    width: 100% !important;
+    padding: 1rem !important;
+  }
+</style>

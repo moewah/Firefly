@@ -1,0 +1,145 @@
+---
+import { getCollection } from 'astro:content';
+import MainGridLayout from '@layouts/MainGridLayout.astro';
+import { Icon } from 'astro-icon/components';
+import { siteConfig } from '@/config/siteConfig';
+
+export async function getStaticPaths() {
+  if (!siteConfig.pages.hubs.enabled) {
+    return [];
+  }
+  
+  const hubs = await getCollection('hubs');
+  const sortedHubs = hubs.sort((a, b) => (b.data.spokes?.length || 0) - (a.data.spokes?.length || 0));
+  const pageSize = siteConfig.pagination.postsPerPage;
+  const totalPages = Math.ceil(sortedHubs.length / pageSize);
+  
+  // 生成第2页及之后的路径
+  const paths = [];
+  for (let page = 2; page <= totalPages; page++) {
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const paginatedHubs = sortedHubs.slice(startIndex, endIndex);
+    
+    const hubsPageTitle = siteConfig.pages.hubs.title;
+    const hubsPageDesc = siteConfig.pages.hubs.description;
+    
+    paths.push({
+      params: { page: String(page) },
+      props: {
+        currentPage: page,
+        totalPages,
+        pageSize,
+        paginatedHubs,
+        totalHubs: sortedHubs.length
+      }
+    });
+  }
+  
+  return paths;
+}
+
+const { currentPage, totalPages, pageSize, paginatedHubs, totalHubs } = Astro.props;
+
+const hubsPageTitle = siteConfig.pages.hubs.title;
+const hubsPageDesc = siteConfig.pages.hubs.description;
+
+// 分页 URL 生成函数
+const getHubsPageUrl = (page: number) => {
+  if (page === 1) return '/hubs/';
+  return `/hubs/page/${page}/`;
+};
+---
+
+<MainGridLayout title={`${hubsPageTitle} - 第 ${currentPage} 页`} description={hubsPageDesc} canonical={new URL("/hubs/", Astro.url)}>
+  <div class="card-base px-6 md:px-9 py-8 mb-4">
+<!-- 页面标题 -->
+    <section class="mb-8" aria-labelledby="hubs-index-title">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="h-8 w-8 rounded-lg bg-(--primary) flex items-center justify-center text-white dark:text-black/70">
+          <Icon name="material-symbols:category-search" class="text-[1.5rem]" />
+        </div>
+        <h1 id="hubs-index-title" class="text-3xl font-bold text-neutral-900 dark:text-neutral-100">
+          {hubsPageTitle} - 第 {currentPage} 页
+        </h1>
+      </div>
+      <p class="text-base text-neutral-600 dark:text-neutral-400 leading-relaxed" role="doc-subtitle">
+        {hubsPageDesc}
+      </p>
+    </section>
+
+    <!-- Hub 卡片网格（一行两个） -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      {paginatedHubs.map(hub => (
+        <a
+          href={`/hubs/${hub.data.slug}/`}
+          class="card-base group block p-4 md:p-6 hover:bg-(--btn-card-bg-hover) 
+                 flex flex-col overflow-hidden transition-all duration-200 
+                 hover:scale-[1.02] active:scale-[0.98]"
+        >
+          <!-- 标题区域 -->
+          <div class="flex items-center gap-3 mb-2">
+            <Icon name={hub.data.icon || 'material-symbols:category-search'} class="text-xl text-(--primary) shrink-0" />
+            <h2 class="text-lg font-semibold text-90 group-hover:text-(--primary) transition-colors line-clamp-2 leading-tight">
+              {hub.data.title}
+            </h2>
+          </div>
+
+          <!-- 描述区域 -->
+          <p class="text-sm text-neutral-400 line-clamp-2 lg:line-clamp-3 overflow-hidden">
+            {hub.data.description}
+          </p>
+
+          <!-- 统计区域 -->
+          <div class="flex items-center gap-2 text-xs text-50 mt-auto pt-3 shrink-0">
+            <Icon name="material-symbols:article-outline" class="text-sm" />
+            <span>{hub.data.spokes?.length || 0} 篇文章</span>
+          </div>
+        </a>
+      ))}
+    </div>
+
+    <!-- 分页导航 -->
+    {totalPages > 1 && (
+      <div class="flex justify-center mt-8">
+        <nav class="pagination-nav flex flex-row gap-3 justify-center items-center" aria-label="分页导航">
+          <!-- 上一页 -->
+          <a
+            href={currentPage > 1 ? getHubsPageUrl(currentPage - 1) : ''}
+            aria-label={currentPage > 1 ? "上一页" : null}
+            class:list={[
+              "btn-card overflow-hidden rounded-lg text-(--primary) w-11 h-11",
+              { disabled: currentPage <= 1 }
+            ]}
+          >
+            <Icon name="material-symbols:chevron-left-rounded" class="text-[1.75rem]" />
+          </a>
+          
+          <!-- 页码 -->
+          <div class="bg-(--card-bg) flex flex-row rounded-lg items-center text-neutral-700 dark:text-neutral-300 font-bold">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+              p === currentPage
+                ? <div class="h-11 w-11 rounded-lg bg-(--primary) flex items-center justify-center font-bold text-white dark:text-black/70">{p}</div>
+                : <a href={getHubsPageUrl(p)} aria-label={`第 ${p} 页`} class="btn-card w-11 h-11 rounded-lg overflow-hidden active:scale-[0.85]">{p}</a>
+            ))}
+          </div>
+          
+          <!-- 下一页 -->
+          <a
+            href={currentPage < totalPages ? getHubsPageUrl(currentPage + 1) : ''}
+            aria-label={currentPage < totalPages ? "下一页" : null}
+            class:list={[
+              "btn-card overflow-hidden rounded-lg text-(--primary) w-11 h-11",
+              { disabled: currentPage >= totalPages }
+            ]}
+          >
+            <Icon name="material-symbols:chevron-right-rounded" class="text-[1.75rem]" />
+          </a>
+        </nav>
+      </div>
+    )}
+  </div>
+  
+  <!-- 分页页 noindex -->
+  <meta name="robots" content="noindex, follow" slot="head" />
+</MainGridLayout>

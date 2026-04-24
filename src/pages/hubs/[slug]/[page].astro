@@ -1,0 +1,74 @@
+---
+import { getCollection } from 'astro:content';
+import HubPage from '@components/layout/HubPage.astro';
+import { siteConfig } from '@/config/siteConfig';
+import { getSortedPosts } from '@utils/content-utils';
+
+export async function getStaticPaths() {
+  const HUB_PAGE_SIZE = siteConfig.pagination.postsPerPage;
+  
+  if (!siteConfig.pages.hubs.enabled) {
+    return [];
+  }
+  
+  const hubs = await getCollection('hubs');
+  const allPosts = await getSortedPosts();
+  const siteUrl = siteConfig.site_url;
+  
+  const paths = [];
+  
+  hubs.forEach(hub => {
+    const data = hub.data;
+    const siteUrl = siteConfig.site_url;
+    
+    // 解析 spokes
+    const spokeItems = (data.spokes || []).map(spoke => {
+      if (!spoke.slug) return { name: '', url: '' };
+      
+      const post = allPosts.find(p =>
+        p.id.replace(/\.(md|mdx)$/, '') === spoke.slug ||
+        p.data.slug === spoke.slug ||
+        p.id.includes(spoke.slug)
+      );
+      return {
+        name: spoke.custom_title || (post?.data?.title || ''),
+        url: `${siteUrl}/posts/${spoke.slug}/`
+      };
+    }).filter(item => item.name && item.url);
+    
+    const totalArticles = spokeItems.length;
+    const totalPages = Math.ceil(totalArticles / HUB_PAGE_SIZE);
+    
+    // 生成第2页及之后的路径
+    for (let page = 2; page <= totalPages; page++) {
+      paths.push({
+        params: { slug: data.slug, page: String(page) },
+        props: {
+          hub,
+          currentPage: page,
+          totalPages,
+          pageSize: HUB_PAGE_SIZE,
+          canonicalSlug: data.slug
+        }
+      });
+    }
+  });
+  
+  return paths;
+}
+
+const { hub, currentPage, totalPages, pageSize, canonicalSlug } = Astro.props;
+---
+
+{siteConfig.pages.hubs.enabled && hub && (
+  <HubPage
+    hub={hub}
+    currentPage={currentPage}
+    totalPages={totalPages}
+    pageSize={pageSize}
+    canonical={new URL(`/hubs/${canonicalSlug}/`, Astro.url)}
+  >
+    {/* 分页页 noindex */}
+    <meta name="robots" content="noindex, follow" slot="head" />
+  </HubPage>
+)}

@@ -1,47 +1,45 @@
 ---
 import { getCollection } from 'astro:content';
-import HubPage from '@components/HubPage.astro';
+import HubPage from '@components/layout/HubPage.astro';
 import { siteConfig } from '@/config/siteConfig';
 import { getSortedPosts } from '@utils/content-utils';
 import { profileConfig } from '@/config/profileConfig';
 
-// 静态路径生成 - 开关关闭时返回空数组（不构建任何子页面）
+// 静态路径生成 - 第1页
 export async function getStaticPaths() {
+  const HUB_PAGE_SIZE = siteConfig.pagination.postsPerPage;
+  
   if (!siteConfig.pages.hubs.enabled) {
-    return []; // 不生成任何 Hub 子页面
+    return [];
   }
   
   const hubs = await getCollection('hubs');
-  const allPosts = await getSortedPosts(); // 获取所有文章
-  const siteUrl = siteConfig.site_url; // 从配置获取站点 URL
+  const allPosts = await getSortedPosts();
+  const siteUrl = siteConfig.site_url;
   
   return hubs.map(hub => {
     const data = hub.data;
     const hubUrl = `${siteUrl}/hubs/${data.slug}/`;
     const hubsIndexUrl = `${siteUrl}/hubs/`;
     
-    // 解析 spokes 获取真实标题
+    // 解析 spokes（仅内部文章）
     const spokeItems = (data.spokes || []).map(spoke => {
-      if (spoke.slug) {
-        // 查找文章获取标题
-        const post = allPosts.find(p => 
-          p.id.replace(/\.(md|mdx)$/, '') === spoke.slug ||
-          p.data.slug === spoke.slug ||
-          p.id.includes(spoke.slug)
-        );
-        return {
-          name: spoke.custom_title || (post?.data?.title || ''),
-          url: `${siteUrl}/posts/${spoke.slug}/`
-        };
-      } else if (spoke.url) {
-        // 外部链接
-        return {
-          name: spoke.custom_title || spoke.title || '',
-          url: spoke.url
-        };
-      }
-      return { name: '', url: '' };
-    });
+      if (!spoke.slug) return { name: '', url: '' };
+      
+      const post = allPosts.find(p => 
+        p.id.replace(/\.(md|mdx)$/, '') === spoke.slug ||
+        p.data.slug === spoke.slug ||
+        p.id.includes(spoke.slug)
+      );
+      return {
+        name: spoke.custom_title || (post?.data?.title || ''),
+        url: `${siteUrl}/posts/${spoke.slug}/`
+      };
+    }).filter(item => item.name && item.url);
+    
+    // 计算总页数
+    const totalArticles = spokeItems.length;
+    const totalPages = Math.ceil(totalArticles / HUB_PAGE_SIZE);
     
     // BreadcrumbList JSON-LD
     const breadcrumbJsonLd = {
@@ -102,17 +100,29 @@ export async function getStaticPaths() {
     
     return {
       params: { slug: data.slug },
-      props: { hub, breadcrumbJsonLd, collectionPageJsonLd }
+      props: {
+        hub,
+        currentPage: 1,
+        totalPages,
+        pageSize: HUB_PAGE_SIZE,
+        breadcrumbJsonLd,
+        collectionPageJsonLd
+      }
     };
   });
 }
 
-const { hub, breadcrumbJsonLd, collectionPageJsonLd } = Astro.props;
+const { hub, currentPage, totalPages, pageSize, breadcrumbJsonLd, collectionPageJsonLd } = Astro.props;
 ---
 
 {siteConfig.pages.hubs.enabled && hub && (
-  <HubPage hub={hub}>
-    <!-- JSON-LD 注入到 head -->
+  <HubPage
+    hub={hub}
+    currentPage={currentPage}
+    totalPages={totalPages}
+    pageSize={pageSize}
+    canonical={new URL(`/hubs/${hub.data.slug}/`, Astro.url)}
+  >
     <script type="application/ld+json" slot="head" set:html={JSON.stringify(breadcrumbJsonLd)} />
     <script type="application/ld+json" slot="head" set:html={JSON.stringify(collectionPageJsonLd)} />
   </HubPage>
