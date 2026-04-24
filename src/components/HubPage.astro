@@ -348,17 +348,37 @@ const hubLastUpdated = internalArticles.length > 0
                     </p>
                     
                     {config.show_tags && article.tags?.length > 0 && (
-                      <div class="flex gap-1 flex-wrap mt-auto pt-3 shrink-0">
-                        {article.tags.slice(0, 3).map((tag: string) => (
-                          <a
-                            href={`/archive/?tag=${tag}`}
-                            class="btn-regular h-5 text-xs px-1.5 py-0.5 rounded 
-                                  transition-all duration-200 hover:scale-105 active:scale-95"
-                          >
-                            #{tag}
-                          </a>
-                        ))}
-                      </div>
+                      <>
+                        {/* 移动端截断版：前2个 + N */}
+                        <div class="flex gap-1 overflow-hidden mt-auto pt-3 shrink-0 lg:hidden">
+                          {article.tags.slice(0, 2).map((tag: string) => (
+                            <a
+                              href={`/archive/?tag=${tag}`}
+                              class="whitespace-nowrap shrink-0 btn-regular h-5 text-xs px-1.5 py-0.5 rounded 
+                                    transition-all duration-200 hover:scale-105 active:scale-95"
+                            >
+                              #{tag}
+                            </a>
+                          ))}
+                          {article.tags.length > 2 && (
+                            <span class="whitespace-nowrap shrink-0 btn-regular h-5 text-xs px-1.5 py-0.5 rounded">
+                              +{article.tags.length - 2}
+                            </span>
+                          )}
+                        </div>
+                        {/* 大屏完整版：所有标签 */}
+                        <div class="hidden lg:flex gap-1 flex-wrap mt-auto pt-3 shrink-0">
+                          {article.tags.map((tag: string) => (
+                            <a
+                              href={`/archive/?tag=${tag}`}
+                              class="whitespace-nowrap shrink-0 btn-regular h-5 text-xs px-1.5 py-0.5 rounded 
+                                    transition-all duration-200 hover:scale-105 active:scale-95"
+                            >
+                              #{tag}
+                            </a>
+                          ))}
+                        </div>
+                      </>
                     )}
                   </a>
                 ) : (
