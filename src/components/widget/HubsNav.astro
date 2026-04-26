@@ -59,10 +59,10 @@ const style = Astro.props.style;
 				label={`查看专题：${hub.data.title}`}
 			>
 				<div class="flex items-center gap-2">
-<div class="h-5 w-5 rounded bg-(--primary) flex items-center justify-center text-white dark:text-black/70 shrink-0">
-	<Icon name={hub.data.icon || defaultIcon} class="text-sm" />
+<div class="h-5 w-5 md:h-4 md:w-4 rounded bg-(--primary) flex items-center justify-center text-white dark:text-black/70 shrink-0">
+	<Icon name={hub.data.icon || defaultIcon} class="text-sm md:text-xs" />
 </div>
-					<span class="truncate">{hub.data.title}</span>
+					<span class="truncate md:text-sm">{hub.data.title}</span>
 				</div>
 			</ButtonLink>
 		))}
