@@ -31,6 +31,7 @@ import { remarkReadingTime } from "./src/plugins/remark-reading-time.mjs";
 import mdx from "@astrojs/mdx";
 import rehypeEmailProtection from "./src/plugins/rehype-email-protection.mjs";
 import rehypeFigure from "./src/plugins/rehype-figure.mjs";
+import rehypeTableWrapper from "./src/plugins/rehype-table-wrapper.mjs";
 
 // https://astro.build/config
 export default defineConfig({
@@ -177,8 +178,7 @@ export default defineConfig({
 					},
 				},
 			],
-			[
-				rehypeAutolinkHeadings,
+			[rehypeAutolinkHeadings,
 				{
 					behavior: "append",
 					properties: {
@@ -200,6 +200,7 @@ export default defineConfig({
 					},
 				},
 			],
+			rehypeTableWrapper,
 		],
 	},
 	vite: {
