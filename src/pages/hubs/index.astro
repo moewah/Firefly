@@ -64,8 +64,8 @@ const hubsItemListJsonLd = {
         </p>
       </section>
 
-      <!-- Hub 卡片网格（一行两个） -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <!-- Hub 卡片列表 -->
+      <div class="space-y-4">
         {paginatedHubs.map(hub => (
           <a
             href={`/hubs/${hub.data.slug}/`}
