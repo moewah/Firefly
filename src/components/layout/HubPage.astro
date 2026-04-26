@@ -148,20 +148,26 @@ if (data.auto_spokes?.enabled) {
   }
 }
 
-// 3. 根据 config.sort_by 排序（仅对非 default 排序）
-const sortBy = data.config?.sort_by || 'default';
-if (sortBy !== 'default') {
-  spokeArticles = spokeArticles.sort((a, b) => {
-    const aDate = sortBy === 'updated' 
-      ? (a.entry.data.updated || a.entry.data.published) 
-      : a.entry.data.published;
-    const bDate = sortBy === 'updated' 
-      ? (b.entry.data.updated || b.entry.data.published) 
-      : b.entry.data.published;
-    const cmp = new Date(bDate).getTime() - new Date(aDate).getTime(); // 新→旧
-    return cmp;
-  });
-}
+// 3. 最终排序：pinned 优先（按 updated 降序），非 pinned 按 published 降序
+spokeArticles = spokeArticles.sort((a, b) => {
+  const aPinned = a.entry.data.pinned;
+  const bPinned = b.entry.data.pinned;
+  
+  // 1. pinned 最高优先级
+  if (aPinned && !bPinned) return -1;
+  if (!aPinned && bPinned) return 1;
+  
+  // 2. 同组内排序：pinned 组按 updated，非 pinned 组按 published
+  const aDate = aPinned 
+    ? (a.entry.data.updated || a.entry.data.published) 
+    : a.entry.data.published;
+  const bDate = bPinned 
+    ? (b.entry.data.updated || b.entry.data.published) 
+    : b.entry.data.published;
+  
+  // 降序：新 → 旧
+  return new Date(bDate).getTime() - new Date(aDate).getTime();
+});
 
 // 配置默认值
 const config = {
