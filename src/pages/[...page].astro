@@ -2,7 +2,7 @@
 import type { GetStaticPaths } from "astro";
 import Pagination from "@/components/common/Pagination.astro";
 import PostPage from "@/components/layout/PostPage.astro";
-import { siteConfig } from "@/config";
+import { profileConfig, siteConfig } from "@/config";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
 import { getSortedPosts } from "@/utils/content-utils";
 export const getStaticPaths = (async ({ paginate }) => {
@@ -19,10 +19,39 @@ const len = page.data.length;
 
 // 首页不加 noindex，只有分页页面加
 const isFirstPage = page.currentPage === 1;
+
+// 动态提取社交链接作为 sameAs（过滤掉 mailto: 和相对路径）
+const socialLinks = profileConfig.links
+	.filter(link => link.url.startsWith('http'))
+	.map(link => link.url);
 ---
 
 <MainGridLayout canonical={new URL("/", Astro.url)}>
   {!isFirstPage && <meta name="robots" content="noindex, follow" slot="head">}
+  {isFirstPage && (
+    <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": siteConfig.title,
+      "url": siteConfig.site_url,
+      "description": siteConfig.description,
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": `${siteConfig.site_url}/search/?q={search_term_string}`,
+        "query-input": "required name=search_term_string"
+      }
+    })} />
+  )}
+  {isFirstPage && (
+    <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": profileConfig.name,
+      "url": siteConfig.site_url,
+      "logo": `${siteConfig.site_url}${siteConfig.navbar.logo.value}`,
+      "sameAs": socialLinks
+    })} />
+  )}
   <PostPage page={page} />
   {
     page.total > page.size && (
