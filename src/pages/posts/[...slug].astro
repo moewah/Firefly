@@ -74,9 +74,12 @@ if (processedImage) {
 	}
 }
 
-// 确保 Schema image 为绝对 URL
+// 确保 Schema image 为绝对 URL（过滤开发模式 /@fs/ 路径）
 let schemaImageUrl = posterCoverUrl;
-if (posterCoverUrl && !posterCoverUrl.startsWith("http")) {
+if (posterCoverUrl && posterCoverUrl.includes("/@fs/")) {
+	// 开发模式下本地图片路径无效，跳过
+	schemaImageUrl = undefined;
+} else if (posterCoverUrl && !posterCoverUrl.startsWith("http")) {
 	schemaImageUrl = new URL(posterCoverUrl, Astro.site).href;
 }
 
