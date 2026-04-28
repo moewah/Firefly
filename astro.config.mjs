@@ -52,7 +52,10 @@ export default defineConfig({
 			],
 			smoothScrolling: false,
 			cache: true,
-			preload: true,
+			preload: {
+					hover: true, // 仅在 hover 时预加载（不阻塞首屏）
+					visible: false, // 不预加载可见链接
+				},
 			accessibility: true,
 			updateHead: true,
 			updateBodyClass: false,
