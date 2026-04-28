@@ -111,8 +111,12 @@ const bannerOffset = `${BANNER_HEIGHT_EXTEND / 2}vh`;
     }
     <meta name="author" content={profileConfig.name} />
 
-    <link rel="canonical" href={canonical || Astro.url} />
-
+<link rel="canonical" href={canonical || Astro.url} />
+    
+    <!-- Preload background images for LCP -->
+    <link rel="preload" as="image" href="/assets/images/d1.webp" type="image/webp" media="(min-width: 768px)" />
+    <link rel="preload" as="image" href="/assets/images/m1.webp" type="image/webp" media="(max-width: 767px)" />
+    
     <meta property="og:site_name" content={siteConfig.title} />
     <meta property="og:url" content={canonical || Astro.url} />
     <meta property="og:title" content={pageTitle} />
