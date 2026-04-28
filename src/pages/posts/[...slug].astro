@@ -74,6 +74,12 @@ if (processedImage) {
 	}
 }
 
+// 确保 Schema image 为绝对 URL
+let schemaImageUrl = posterCoverUrl;
+if (posterCoverUrl && !posterCoverUrl.startsWith("http")) {
+	schemaImageUrl = new URL(posterCoverUrl, Astro.site).href;
+}
+
 dayjs.extend(utc);
 
 // 作者社交链接（过滤 http 开头，排除 mailto 和相对路径）
@@ -86,7 +92,7 @@ const jsonLd = {
 	"@type": "BlogPosting",
 	headline: entry.data.title,
 	description: entry.data.description || entry.data.title,
-	image: posterCoverUrl,
+	image: schemaImageUrl,
 	keywords: entry.data.tags,
 	author: {
 		"@type": "Person",
