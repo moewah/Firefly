@@ -98,12 +98,6 @@ const bannerOffset = `${BANNER_HEIGHT_EXTEND / 2}vh`;
 <html lang={siteLang} class="bg-(--page-bg) text-[14px] md:text-[16px]">
   <head>
     <meta charset="UTF-8" />
-    {siteConfig.analytics?.googleAnalyticsId && (
-            <GoogleAnalytics analyticsId={siteConfig.analytics.googleAnalyticsId} />
-    )}
-    {siteConfig.analytics?.microsoftClarityId && (
-            <MicrosoftClarity clarityId={siteConfig.analytics.microsoftClarityId} />
-    )}
 
     <title>{pageTitle}</title>
     <meta
@@ -445,6 +439,14 @@ const bannerOffset = `${BANNER_HEIGHT_EXTEND / 2}vh`;
 
     <!-- Fancybox Manager -->
     <FancyboxManager />
+
+    <!-- Analytics Scripts - 延迟加载 -->
+    {siteConfig.analytics?.googleAnalyticsId && (
+            <GoogleAnalytics analyticsId={siteConfig.analytics.googleAnalyticsId} />
+    )}
+    {siteConfig.analytics?.microsoftClarityId && (
+            <MicrosoftClarity clarityId={siteConfig.analytics.microsoftClarityId} />
+    )}
   </body>
 </html>
 

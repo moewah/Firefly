@@ -6,14 +6,17 @@ interface Props {
 const { analyticsId } = Astro.props;
 ---
 
-<!-- Google tag (gtag.js) -->
-<script is:inline data-swup-ignore-script async src={`https://www.googletagmanager.com/gtag/js?id=${analyticsId}`}></script>
-<script is:inline data-swup-ignore-script define:vars={{analyticsId}}>window.dataLayer = window.dataLayer || [];
+<!-- Google tag (gtag.js) - 延迟加载 -->
+<script is:inline data-swup-ignore-script define:vars={{analyticsId}}>
+  window.addEventListener('load', function() {
+    var script = document.createElement('script');
+    script.async = true;
+    script.src = 'https://www.googletagmanager.com/gtag/js?id=' + analyticsId;
+    document.head.appendChild(script);
 
-function gtag() {
-    dataLayer.push(arguments);
-}
-
-gtag('js', new Date());
-gtag('config', analyticsId);
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', analyticsId);
+  });
 </script>
