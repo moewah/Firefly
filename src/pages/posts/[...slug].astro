@@ -76,25 +76,38 @@ if (processedImage) {
 
 dayjs.extend(utc);
 
-const belongingHubs = siteConfig.pages.hubs.enabled ? await getHubsForPost(entry.id) : [];
+// 作者社交链接（过滤 http 开头，排除 mailto 和相对路径）
+const authorSameAs = profileConfig.links
+	.filter(l => l.url.startsWith("http"))
+	.map(l => l.url);
 
 const jsonLd = {
 	"@context": "https://schema.org",
 	"@type": "BlogPosting",
 	headline: entry.data.title,
 	description: entry.data.description || entry.data.title,
+	image: posterCoverUrl,
 	keywords: entry.data.tags,
 	author: {
 		"@type": "Person",
 		name: profileConfig.name,
-		url: Astro.site,
+		url: new URL("/about/", Astro.site).href,
+		sameAs: authorSameAs,
 	},
 	datePublished: formatDateToYYYYMMDD(entry.data.published),
+	dateModified: entry.data.updated
+		? formatDateToYYYYMMDD(entry.data.updated)
+		: formatDateToYYYYMMDD(entry.data.published),
+	mainEntityOfPage: {
+		"@type": "WebPage",
+		"@id": Astro.url.href,
+	},
 	inLanguage: entry.data.lang
 		? entry.data.lang.replace("_", "-")
 		: siteConfig.lang.replace("_", "-"),
-	// TODO include cover image here
 };
+
+const belongingHubs = siteConfig.pages.hubs.enabled ? await getHubsForPost(entry.id) : [];
 ---
 
 <MainGridLayout
