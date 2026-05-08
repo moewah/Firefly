@@ -2,7 +2,8 @@
 @import './layout-styles.css';
 @import './navbar.css';
 @import './waves.css';
-@import './transition.css'; 
+@import './transition.css';
+@import './post-list-layout.css'; 
 
 @plugin '@tailwindcss/typography';
 

@@ -41,6 +41,7 @@ interface Props {
         show_tags?: boolean;
         grid_layout?: boolean;
         sort_by?: 'default' | 'published' | 'updated';
+        order?: 'asc' | 'desc';
       };
     };
   };
@@ -210,8 +211,13 @@ const hubLastUpdated = spokeArticles.length > 0
 
 // 布局配置（复用 PostPage 的机制）
 const defaultLayout = siteConfig.postListLayout.defaultMode || 'list';
+const mobileDefaultLayout = siteConfig.postListLayout.mobileDefaultMode || defaultLayout;
+const masonryEnabled = siteConfig.postListLayout.grid.masonry;
+const columnWidth = siteConfig.postListLayout.grid.columnWidth || 280;
+
+// 根据 postListLayout 设置初始布局类
 const initialLayoutClass = defaultLayout === 'grid'
-  ? 'grid grid-cols-1 md:grid-cols-2 gap-4 grid-mode'
+  ? 'post-grid-auto grid-mode'
   : 'flex flex-col gap-4 md:gap-4 list-mode';
 
 let delay = 0;
@@ -283,9 +289,11 @@ const interval = 50;
         id="post-list-container"
         class={`transition-all duration-500 ease-in-out ${initialLayoutClass}`}
         data-default-layout={defaultLayout}
+        data-mobile-default-layout={mobileDefaultLayout}
+        data-masonry-enabled={masonryEnabled}
+        data-column-width={columnWidth}
         data-both-sidebars="true"
-        data-masonry-enabled="false"
-        data-grid-columns="2"
+        style={`--post-card-min-width: ${columnWidth}px;`}
       >
         {paginatedArticles.map((article) => (
           <PostCard
@@ -351,19 +359,21 @@ const interval = 50;
 </MainGridLayout>
 
 <!-- 立即执行脚本：防止刷新时的布局闪烁 -->
-<script is:inline define:vars={{ defaultLayout }}>
+<script is:inline define:vars={{ defaultLayout, mobileDefaultLayout, columnWidth }}>
   (function() {
     const savedLayout = localStorage.getItem('postListLayout');
+    const effectiveDefault = window.innerWidth < 780 ? mobileDefaultLayout : defaultLayout;
+    const effectiveLayout = window.innerWidth < 380 ? 'grid' : (savedLayout || effectiveDefault);
 
-    if (savedLayout && savedLayout !== defaultLayout) {
+    if (effectiveLayout !== defaultLayout) {
       const container = document.getElementById('post-list-container');
 
       if (container) {
         container.style.transition = 'none';
-        container.classList.remove('list-mode', 'grid-mode', 'flex', 'flex-col', 'grid', 'grid-cols-1', 'md:grid-cols-2', 'gap-4', 'md:gap-4');
+        container.classList.remove('list-mode', 'grid-mode', 'post-grid-auto', 'flex', 'flex-col', 'gap-4', 'md:gap-4');
 
-        if (savedLayout === 'grid') {
-          container.classList.add('grid-mode', 'grid', 'grid-cols-1', 'md:grid-cols-2', 'gap-4');
+        if (effectiveLayout === 'grid') {
+          container.classList.add('grid-mode', 'post-grid-auto');
         } else {
           container.classList.add('list-mode', 'flex', 'flex-col', 'gap-4', 'md:gap-4');
         }
@@ -376,201 +386,148 @@ const interval = 50;
 </script>
 
 <script>
-  // 动态布局切换脚本（简化版，无 masonry）
+  // 复用 PostPage 的布局切换逻辑
   function initLayout() {
     const postListContainer = document.getElementById("post-list-container");
     if (!postListContainer) return;
 
-    const screenWidth = window.innerWidth;
-    const isSmallScreen = screenWidth < 1200;
-
     const savedLayout = localStorage.getItem("postListLayout");
     const defaultLayout = postListContainer.getAttribute("data-default-layout") || "list";
-    let currentLayout = savedLayout || defaultLayout;
+    const mobileDefaultLayout = postListContainer.getAttribute("data-mobile-default-layout") || defaultLayout;
 
-    if (isSmallScreen) {
-      currentLayout = "list";
+    const effectiveDefault = window.innerWidth < 780 ? mobileDefaultLayout : defaultLayout;
+    let currentLayout = savedLayout || effectiveDefault;
+
+    if (window.innerWidth < 380) {
+      currentLayout = "grid";
     }
 
-    updatePostListLayout(currentLayout);
+    applyLayout(currentLayout);
   }
 
-  function updatePostListLayout(layout: string) {
+  function applyLayout(layout: string) {
     const postListContainer = document.getElementById("post-list-container");
     if (!postListContainer) return;
 
-    const isCurrentGrid = postListContainer.classList.contains("grid-mode");
-    const isCurrentList = postListContainer.classList.contains("list-mode");
-    const currentLayout = isCurrentGrid ? "grid" : (isCurrentList ? "list" : null);
+    const masonryEnabled = postListContainer.getAttribute("data-masonry-enabled") === "true";
 
-    const applyClasses = () => {
-      postListContainer.classList.remove("list-mode", "grid-mode");
-      if (layout === "grid") {
-        postListContainer.classList.add("grid-mode");
-        postListContainer.classList.remove("flex", "flex-col");
-        postListContainer.classList.add("grid", "grid-cols-1", "md:grid-cols-2", "gap-4");
+    postListContainer.classList.remove("list-mode", "grid-mode", "post-grid-auto", "flex", "flex-col", "gap-4", "md:gap-4");
+
+    if (layout === "grid") {
+      postListContainer.classList.add("grid-mode");
+      if (masonryEnabled) {
+        postListContainer.classList.remove("post-grid-auto");
+        applyMasonryLayout();
       } else {
-        postListContainer.classList.add("list-mode");
-        postListContainer.classList.add("flex", "flex-col", "gap-4", "md:gap-4");
-        postListContainer.classList.remove("grid", "grid-cols-1", "md:grid-cols-2");
+        postListContainer.classList.add("post-grid-auto");
+        resetMasonryLayout();
       }
-    };
-
-    if (!currentLayout) {
-      applyClasses();
-      return;
+    } else {
+      postListContainer.classList.add("list-mode", "flex", "flex-col", "gap-4", "md:gap-4");
+      resetMasonryLayout();
     }
-
-    if (currentLayout === layout) {
-      return;
-    }
-
-    postListContainer.classList.add("layout-switching");
-    
-    setTimeout(() => {
-      applyClasses();
-      requestAnimationFrame(() => {
-        postListContainer.classList.remove("layout-switching");
-      });
-    }, 200);
   }
 
-  document.addEventListener("DOMContentLoaded", function () {
-    setTimeout(initLayout, 50);
-  });
+  function resetMasonryLayout() {
+    const container = document.getElementById("post-list-container");
+    if (!container) return;
 
-  document.addEventListener("visibilitychange", function () {
-    if (!document.hidden) {
-      setTimeout(initLayout, 100);
-    }
-  });
+    container.style.height = "";
+    container.style.position = "";
+    container.style.display = "";
 
+    const items = container.querySelectorAll(".post-card-item");
+    items.forEach((item) => {
+      // @ts-ignore
+      item.style.position = "";
+      // @ts-ignore
+      item.style.top = "";
+      // @ts-ignore
+      item.style.left = "";
+      // @ts-ignore
+      item.style.width = "";
+    });
+  }
+
+  function applyMasonryLayout() {
+    const container = document.getElementById("post-list-container");
+    if (!container) return;
+
+    const masonryEnabled = container.getAttribute("data-masonry-enabled") === "true";
+    if (!masonryEnabled) return;
+    if (!container.classList.contains("grid-mode")) return;
+
+    const items = Array.from(container.querySelectorAll(".post-card-item"));
+    if (items.length === 0) return;
+
+    const gap = 16;
+    const columnWidth = parseInt(container.getAttribute("data-column-width") || "280");
+
+    container.style.position = "relative";
+    container.style.display = "block";
+
+    const containerWidth = container.offsetWidth;
+    const colCount = Math.max(1, Math.floor((containerWidth + gap) / (columnWidth + gap)));
+    const itemWidth = (containerWidth - (colCount - 1) * gap) / colCount;
+
+    const colHeights = new Array(colCount).fill(0);
+
+    items.forEach((item) => {
+      const colIndex = colHeights.indexOf(Math.min(...colHeights));
+      // @ts-ignore
+      item.style.position = "absolute";
+      // @ts-ignore
+      item.style.width = `${itemWidth}px`;
+      // @ts-ignore
+      item.style.setProperty('height', 'auto', 'important');
+      // @ts-ignore
+      const height = item.offsetHeight;
+      const top = colHeights[colIndex];
+      const left = colIndex * (itemWidth + gap);
+      // @ts-ignore
+      item.style.top = `${top}px`;
+      // @ts-ignore
+      item.style.left = `${left}px`;
+      colHeights[colIndex] += height + gap;
+    });
+
+    container.style.height = `${Math.max(...colHeights)}px`;
+  }
+
+  // 监听布局变化事件（由 DisplaySettingsIntegrated.svelte 或 LayoutSwitchButton.svelte 触发）
   window.addEventListener("layoutChange", function (event) {
-    const newLayout = (event as CustomEvent).detail.layout;
-    const screenWidth = window.innerWidth;
-    const isSmallScreen = screenWidth < 1200;
-
-    if (isSmallScreen) {
-      updatePostListLayout("list");
-    } else {
-      updatePostListLayout(newLayout);
-    }
+    const newLayout = (event as CustomEvent<{ layout: string }>).detail.layout;
+    applyLayout(newLayout);
   });
 
+  // 监听窗口大小变化
   let resizeTimeout: any;
   window.addEventListener("resize", function () {
     clearTimeout(resizeTimeout);
-    resizeTimeout = setTimeout(function () {
-      initLayout();
-    }, 250);
+    resizeTimeout = setTimeout(initLayout, 250);
   });
 
+  // 监听图片加载重新计算瀑布流
+  function watchImageLoad() {
+    const imgs = document.querySelectorAll('#post-list-container img');
+    imgs.forEach(img => {
+      // @ts-ignore
+      if(img.complete) return;
+      img.addEventListener('load', () => applyMasonryLayout());
+    });
+  }
+
+  // 监听 Astro 客户端路由
   document.addEventListener("astro:page-load", function () {
     setTimeout(initLayout, 50);
+    watchImageLoad();
   });
-  
+
   document.addEventListener("astro:after-swap", function () {
     setTimeout(initLayout, 50);
   });
 
+  // 立即执行
   setTimeout(initLayout, 0);
+  watchImageLoad();
 </script>
-
-<style>
-  /* 布局切换动画 */
-  #post-list-container {
-    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
-  }
-  
-  #post-list-container.layout-switching {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-
-  /* List Mode 标题字号（复用 PostPage 样式） */
-  #post-list-container.list-mode :global(.post-card-title) {
-    font-size: 1.5rem !important;
-    line-height: 2rem !important;
-  }
-
-  #post-list-container.list-mode :global(.post-card-title::before) {
-    top: 2.25rem !important;
-    height: 1rem !important;
-  }
-
- /* Grid Mode 标题字号（复用 PostPage 样式） */
- #post-list-container.grid-mode :global(.post-card-title) {
-   font-size: 1.125rem !important;
-   line-height: 1.75rem !important;
-   margin-bottom: 0.5rem !important;
- }
-  /* Grid Mode 标题装饰条隐藏 */
-  #post-list-container.grid-mode :global(.post-card-title::before) {
-    display: none !important;
-  }
-
-  /* Grid Mode 进入按钮隐藏 */
-  #post-list-container.grid-mode :global(.post-card-enter-btn) {
-    display: none !important;
-  }
-
-  /* Grid Mode 摘要样式 */
-  #post-list-container.grid-mode :global(.description) {
-    font-size: 0.875rem !important;
-    margin-bottom: 0.75rem !important;
-    padding-right: 0 !important;
-  }
-  /* 网格模式下，有封面的文章，摘要最多显示三行 */
-  #post-list-container.grid-mode :global(.has-cover .description) {
-    display: -webkit-box !important;
-    -webkit-box-orient: vertical !important;
-    overflow: hidden !important;
-    -webkit-line-clamp: 3 !important;
-    line-clamp: 3 !important;
-  }
-
-  /* Grid Mode 元数据样式 */
-  #post-list-container.grid-mode :global(.post-meta) {
-    margin-bottom: 0.5rem !important;
-    gap: 0.5rem !important;
-  }
-
-  #post-list-container.grid-mode :global(.post-meta .text-xl) {
-    font-size: 1rem !important;
-    line-height: 1.25rem !important;
-  }
-
-  #post-list-container.grid-mode :global(.meta-icon) {
-    width: 1.5rem !important;
-    height: 1.5rem !important;
-    margin-right: 0.25rem !important;
-  }
-
-  #post-list-container.grid-mode :global(.post-meta .text-sm) {
-    font-size: 0.75rem !important;
-    line-height: 1rem !important;
-  }
-
-  #post-list-container.grid-mode :global(.post-meta .pinned-btn) {
-    padding: 0.25rem 0.375rem !important;
-  }
-
-  /* Grid Mode 卡片布局 */
-  #post-list-container.grid-mode :global(.post-card-wrapper) {
-    flex-direction: column-reverse !important;
-  }
-
-  #post-list-container.grid-mode :global(.post-card-image) {
-    width: 100% !important;
-    position: relative !important;
-    top: auto !important;
-    right: auto !important;
-    bottom: auto !important;
-    border-radius: var(--radius-large) var(--radius-large) 0 0 !important;
-  }
-
-  #post-list-container.grid-mode :global(.post-card-content) {
-    width: 100% !important;
-    padding: 1rem !important;
-  }
-</style>
