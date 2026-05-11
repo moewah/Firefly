@@ -90,6 +90,51 @@ const authorSameAs = profileConfig.links
 	.filter(l => l.url.startsWith("http"))
 	.map(l => l.url);
 
+// 面包屑结构化数据
+const breadcrumbLd = {
+	"@context": "https://schema.org",
+	"@type": "BreadcrumbList",
+	itemListElement: entry.data.category
+		? [
+			{
+				"@type": "ListItem",
+				position: 1,
+				name: "首页",
+				item: Astro.site?.href || siteConfig.site_url,
+			},
+			{
+				"@type": "ListItem",
+				position: 2,
+				name: entry.data.category,
+				item: new URL(
+					`/archive/?category=${encodeURIComponent(entry.data.category)}`,
+					Astro.site
+				).href,
+			},
+			{
+				"@type": "ListItem",
+				position: 3,
+				name: entry.data.title,
+				item: Astro.url.href,
+			},
+		]
+		: [
+			{
+				"@type": "ListItem",
+				position: 1,
+				name: "首页",
+				item: Astro.site?.href || siteConfig.site_url,
+			},
+			{
+				"@type": "ListItem",
+				position: 2,
+				name: entry.data.title,
+				item: Astro.url.href,
+			},
+		],
+};
+
+// 文章结构化数据
 const jsonLd = {
 	"@context": "https://schema.org",
 	"@type": "BlogPosting",
@@ -131,6 +176,15 @@ const belongingHubs = siteConfig.pages.hubs.enabled ? await getHubsForPost(entry
   <!-- KaTeX 按需加载 - 仅在文章页面 -->
   <KatexManager slot="head" />
   
+  <!-- 面包屑结构化数据 -->
+  <script
+    is:inline
+    slot="head"
+    type="application/ld+json"
+    set:html={JSON.stringify(breadcrumbLd)}
+  />
+  
+  <!-- 文章结构化数据 -->
   <script
     is:inline
     slot="head"
