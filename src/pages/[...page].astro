@@ -52,6 +52,22 @@ const socialLinks = profileConfig.links
       "sameAs": socialLinks
     })} />
   )}
+  {isFirstPage && (
+    <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Blog",
+      "name": siteConfig.title,
+      "url": siteConfig.site_url,
+      "description": siteConfig.description,
+      "publisher": {
+        "@type": "Organization",
+        "name": profileConfig.name,
+        "url": siteConfig.site_url,
+        "logo": `${siteConfig.site_url}${siteConfig.navbar.logo.value}`
+      },
+      "inLanguage": siteConfig.lang.replace("_", "-")
+    })} />
+  )}
   <PostPage page={page} />
   {
     page.total > page.size && (
