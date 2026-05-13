@@ -37,9 +37,10 @@ interface Props {
 	setOGTypeArticle?: boolean;
 	postSlug?: string;
 	canonical?: string;
+	keywords?: string[];
 }
 
-let { title, banner, description, lang, setOGTypeArticle, postSlug, canonical } =
+let { title, banner, description, lang, setOGTypeArticle, postSlug, canonical, keywords } =
 	Astro.props;
 
 // apply a class to the body element to decide the height of the banner, only used for initial page load
@@ -105,8 +106,8 @@ const bannerOffset = `${BANNER_HEIGHT_EXTEND / 2}vh`;
       content={description || siteConfig.description || pageTitle}
     />
     {
-      siteConfig.keywords && siteConfig.keywords.length > 0 && (
-        <meta name="keywords" content={siteConfig.keywords.join(", ")} />
+      (keywords || siteConfig.keywords) && (keywords || siteConfig.keywords).length > 0 && (
+        <meta name="keywords" content={(keywords || siteConfig.keywords).join(", ")} />
       )
     }
     <meta name="author" content={profileConfig.name} />

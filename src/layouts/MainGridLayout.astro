@@ -48,6 +48,7 @@ interface Props {
 		minutes?: number;
 	};
 	canonical?: string;
+	keywords?: string[];
 }
 
 const backgroundImages = getBackgroundImages();
@@ -62,6 +63,7 @@ const {
 	headings = [],
 	bannerPostMeta,
 	canonical,
+	keywords,
 } = Astro.props;
 
 // 检查背景壁纸模式和是否允许切换
@@ -188,7 +190,7 @@ const transparentClass = shouldEnableTransparency
 const navbarWidthFull = siteConfig.navbar.widthFull ?? false;
 ---
 
-<Layout title={title} banner={banner} description={description} lang={lang} setOGTypeArticle={setOGTypeArticle} postSlug={postSlug} canonical={canonical}>
+<Layout title={title} banner={banner} description={description} lang={lang} setOGTypeArticle={setOGTypeArticle} postSlug={postSlug} canonical={canonical} keywords={keywords}>
 
 
 <!-- 全屏透明覆盖壁纸 - 如果允许切换则始终渲染，否则只渲染当前模式 -->
