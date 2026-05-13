@@ -33,6 +33,39 @@ import rehypeEmailProtection from "./src/plugins/rehype-email-protection.mjs";
 import rehypeFigure from "./src/plugins/rehype-figure.mjs";
 import rehypeTableWrapper from "./src/plugins/rehype-table-wrapper.mjs";
 import rehypeExternalLinks from "./src/plugins/rehype-external-links.mjs";
+import matter from "gray-matter";
+import { glob } from "glob";
+import * as fs from "node:fs";
+import * as nodePath from "node:path";
+
+// ===== Sitemap lastmod 映射构建 =====
+const postsLastmodMap = new Map();
+const hubsLastmodMap = new Map();
+
+// 扫描文章，优先用 frontmatter.slug，否则用文件名作为 key
+for (const f of await glob("**/*.{md,mdx}", { cwd: "./src/content/posts" })) {
+	const { data } = matter(fs.readFileSync(nodePath.join("./src/content/posts", f), "utf-8"));
+	// 优先使用 frontmatter.slug，若不存在则用文件名（去除扩展名）
+	const slug = data.slug || nodePath.basename(f, nodePath.extname(f));
+	if (slug) {
+		postsLastmodMap.set(slug, data.updated || data.published);
+	}
+}
+
+// 扫描 Hub，聚合关联文章的最新时间
+for (const f of await glob("*.json", { cwd: "./src/content/hubs" })) {
+	const hub = JSON.parse(fs.readFileSync(nodePath.join("./src/content/hubs", f), "utf-8"));
+	const maxDate = (hub.spokes || []).reduce((max, s) => {
+		if (!s.slug) return max;
+		const d = postsLastmodMap.get(s.slug);
+		if (d) {
+			const dt = new Date(d);
+			if (!max || dt > max) max = dt;
+		}
+		return max;
+	}, null);
+	if (maxDate) hubsLastmodMap.set(hub.slug, maxDate);
+}
 
 // https://astro.build/config
 export default defineConfig({
@@ -151,8 +184,64 @@ export default defineConfig({
 				if (pathname === "/bangumi/" && !siteConfig.pages.bangumi) {
 					return false;
 				}
+				if (pathname.startsWith("/hubs/") && !siteConfig.pages.hubs?.enabled) {
+					return false;
+				}
 
 				return true;
+			},
+			serialize(item) {
+				const p = new URL(item.url).pathname;
+
+				// 首页
+				if (p === "/") {
+					item.priority = 1.0;
+					item.changefreq = "daily";
+				}
+
+				// 文章页
+				const postMatch = p.match(/^\/posts\/([^/]+)\/$/);
+				if (postMatch) {
+					item.priority = 0.7;
+					item.changefreq = "monthly";
+					const d = postsLastmodMap.get(postMatch[1]);
+					if (d) item.lastmod = (d instanceof Date ? d : new Date(d)).toISOString().split("T")[0];
+				}
+
+				// Hub 子页（含分页）
+				const hubMatch = p.match(/^\/hubs\/([^/]+)(\/\d+)?\/$/);
+				if (hubMatch) {
+					item.priority = hubMatch[2] ? 0.5 : 0.6;
+					item.changefreq = "weekly";
+					const d = hubsLastmodMap.get(hubMatch[1]);
+					if (d) item.lastmod = d.toISOString().split("T")[0];
+				}
+
+				// Hub 索引页
+				if (p === "/hubs/") {
+					item.priority = 0.6;
+					item.changefreq = "weekly";
+				}
+
+				// 归档页
+				if (p === "/archive/") {
+					item.priority = 0.5;
+					item.changefreq = "weekly";
+				}
+
+				// 博客分页
+				if (p.match(/^\/\d+\/$/)) {
+					item.priority = 0.3;
+					item.changefreq = "daily";
+				}
+
+				// 静态页（Firefly 实际页面，不含 gallery/privacy）
+				if (["/about/", "/friends/", "/guestbook/", "/sponsor/", "/bangumi/", "/rss/", "/search/"].some(page => p.startsWith(page))) {
+					item.priority = 0.5;
+					item.changefreq = "yearly";
+				}
+
+				return item;
 			},
 		}),
 		mdx(),
