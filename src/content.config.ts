@@ -68,13 +68,11 @@ const hubsCollection = defineCollection({
 			show_reading_time: z.boolean().optional().default(true),
 			show_tags: z.boolean().optional().default(true),
 			external_link_icon: z.boolean().optional().default(true),
-			grid_layout: z.boolean().optional().default(false),
 		}).optional().default({
 			show_publish_date: true,
 			show_reading_time: true,
 			show_tags: true,
 			external_link_icon: true,
-			grid_layout: false,
 		}),
 	}),
 });
