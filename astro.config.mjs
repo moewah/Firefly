@@ -174,14 +174,6 @@ export default defineConfig({
 			rehypeMermaid,
 			rehypeFigure,
 			[rehypeEmailProtection, { method: "base64" }], // 邮箱保护插件，支持 'base64' 或 'rot13'
-			// 外部链接处理：为外部链接添加 nofollow 和 target="_blank"
-			...(siteConfig.externalLinks?.enabled === true
-				? [[rehypeExternalLinks, {
-						siteUrl: siteConfig.site_url,
-						rel: siteConfig.externalLinks.rel,
-						target: siteConfig.externalLinks.target
-					}]]
-				: []),
 			[
 				rehypeComponents,
 				{
@@ -212,6 +204,14 @@ export default defineConfig({
 					},
 				},
 			],
+			// 外部链接处理：为外部链接添加 nofollow 和 target="_blank"（放在 rehypeComponents 之后以处理组件生成的链接）
+			...(siteConfig.externalLinks?.enabled === true
+				? [[rehypeExternalLinks, {
+						siteUrl: siteConfig.site_url,
+						rel: siteConfig.externalLinks.rel,
+						target: siteConfig.externalLinks.target
+					}]]
+				: []),
 			rehypeTableWrapper,
 		],
 	},
