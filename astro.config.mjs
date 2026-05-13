@@ -32,6 +32,7 @@ import mdx from "@astrojs/mdx";
 import rehypeEmailProtection from "./src/plugins/rehype-email-protection.mjs";
 import rehypeFigure from "./src/plugins/rehype-figure.mjs";
 import rehypeTableWrapper from "./src/plugins/rehype-table-wrapper.mjs";
+import rehypeExternalLinks from "./src/plugins/rehype-external-links.mjs";
 
 // https://astro.build/config
 export default defineConfig({
@@ -173,6 +174,14 @@ export default defineConfig({
 			rehypeMermaid,
 			rehypeFigure,
 			[rehypeEmailProtection, { method: "base64" }], // 邮箱保护插件，支持 'base64' 或 'rot13'
+			// 外部链接处理：为外部链接添加 nofollow 和 target="_blank"
+			...(siteConfig.externalLinks?.enabled === true
+				? [[rehypeExternalLinks, {
+						siteUrl: siteConfig.site_url,
+						rel: siteConfig.externalLinks.rel,
+						target: siteConfig.externalLinks.target
+					}]]
+				: []),
 			[
 				rehypeComponents,
 				{

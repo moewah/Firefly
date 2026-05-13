@@ -121,6 +121,16 @@ export type SiteConfig = {
 		showPinnedMark?: boolean; // 是否显示置顶📌标记（默认 true）
 		systemPrompt?: string; // AI Agent System Prompt，显示在文件顶部
 	};
+
+	// 外部链接配置
+	externalLinks?: ExternalLinksConfig;
+};
+
+// 外部链接配置类型
+export type ExternalLinksConfig = {
+	enabled: boolean; // 是否启用外部链接处理
+	rel?: string; // rel 属性值，如 "nofollow noopener noreferrer"
+	target?: string; // target 属性值，如 "_blank"
 };
 
 export type Favicon = {

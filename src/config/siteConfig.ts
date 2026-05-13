@@ -171,4 +171,11 @@ export const siteConfig: SiteConfig = {
 
 	// 站点语言，在本配置文件顶部SITE_LANG定义
 	lang: SITE_LANG,
+
+	// 外部链接配置：为文章中的外部链接添加 rel 和 target 属性
+	externalLinks: {
+		enabled: true,
+		rel: "nofollow noopener noreferrer",
+		target: "_blank",
+	},
 };
