@@ -133,18 +133,12 @@ export async function getHubsForPost(articleSlug: string): Promise<HubReference[
 		const spokes = hub.data.spokes;
 		if (!spokes || spokes.length === 0) return false;
 
-		// 检查是否有 spoke 的 slug 匹配当前文章
+		// 检查是否有 spoke 的 slug 匹配当前文章（精确匹配，避免子串误匹配）
 		return spokes.some((spoke) => {
 			if (!spoke.slug) return false;
-			// 多种匹配方式：精确匹配、去除扩展名匹配、包含匹配
 			const spokeSlug = spoke.slug.replace(/\.(md|mdx)$/, "");
 			const articleCleanSlug = articleSlug.replace(/\.(md|mdx)$/, "");
-			return (
-				spokeSlug === articleCleanSlug ||
-				spoke.slug === articleSlug ||
-				articleSlug.includes(spoke.slug) ||
-				spoke.slug.includes(articleCleanSlug)
-			);
+			return spokeSlug === articleCleanSlug || spoke.slug === articleSlug;
 		});
 	});
 

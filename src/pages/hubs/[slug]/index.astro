@@ -26,11 +26,11 @@ export async function getStaticPaths() {
     const spokeItems = (data.spokes || []).map(spoke => {
       if (!spoke.slug) return { name: '', url: '' };
       
-      const post = allPosts.find(p => 
-        p.id.replace(/\.(md|mdx)$/, '') === spoke.slug ||
-        p.data.slug === spoke.slug ||
-        p.id.includes(spoke.slug)
-      );
+      const post = allPosts.find(p => {
+        if (p.data.slug === spoke.slug) return true;
+        if (p.id.replace(/\.(md|mdx)$/, '') === spoke.slug) return true;
+        return false;
+      });
       return {
         name: spoke.custom_title || (post?.data?.title || ''),
         url: `${siteUrl}/posts/${spoke.slug}/`

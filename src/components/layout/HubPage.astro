@@ -69,27 +69,14 @@ if (data.spokes && data.spokes.length > 0) {
   spokeArticles = data.spokes.map(spoke => {
     if (!spoke.slug) return null;
     
-    // 通过 slug 查找完整 entry
-    const post = allPosts.find(p => 
-      p.id.replace(/\.(md|mdx)$/, '') === spoke.slug ||
-      p.data.slug === spoke.slug ||
-      p.id.includes(spoke.slug)
-    );
-    
-    if (!post) {
-      // 尝试更宽松的匹配
-      const looseMatch = allPosts.find(p => 
-        p.id.toLowerCase().includes(spoke.slug!.toLowerCase())
-      );
-      if (!looseMatch) return null;
-      const resolvedSlug = looseMatch.id.replace(/\.(md|mdx)$/, '');
-      existingSlugs.add(resolvedSlug);
-      return {
-        entry: looseMatch,
-        customTitle: spoke.custom_title,
-        customDescription: spoke.custom_description,
-      };
-    }
+    // 手动指定 spokes 必须绝对匹配，不接受任何模糊兜底
+    const post = allPosts.find(p => {
+      if (p.data.slug === spoke.slug) return true;
+      if (p.id.replace(/\.(md|mdx)$/, '') === spoke.slug) return true;
+      return false;
+    });
+
+    if (!post) return null;
     
     const resolvedSlug = post.id.replace(/\.(md|mdx)$/, '');
     existingSlugs.add(resolvedSlug);
