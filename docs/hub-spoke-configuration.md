@@ -12,6 +12,8 @@
   "title": "页面标题",
   "description": "页面描述",
   "slug": "路由路径",
+  "icon": "图标标识",
+  "keywords": ["关键词1", "关键词2"],
   "hero": { ... },
   "spokes": [ ... ],
   "auto_spokes": { ... },
@@ -38,11 +40,28 @@
 }
 ```
 
-> ⚠️ `slug` 必须与文件名一致（不含 `.json` 扩展名）
+> ⚠️ `slug` 必须全局唯一，与文件名无关，仅用于 URL 路由。
 
 ---
 
-## 二、Hero 区域配置（可选）
+## 二、可选基础字段
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `icon` | string | Hero 区域图标，使用 Iconify 图标名称（如 `material-symbols:category-search`），默认 `material-symbols:category-search` |
+| `keywords` | string[] | 页面 SEO 关键词，传递给 `<meta name="keywords">` |
+
+**示例：**
+```json
+{
+  "icon": "material-symbols:deployed-code",
+  "keywords": ["Docker", "容器", "self-hosted", "部署"]
+}
+```
+
+---
+
+## 三、Hero 区域配置（可选）
 
 Hero 是页面顶部的标题展示区，包含大标题和副标题。
 
@@ -50,30 +69,28 @@ Hero 是页面顶部的标题展示区，包含大标题和副标题。
 |------|------|------|
 | `hero.headline` | string | 大标题（若未设置，默认使用 `title`） |
 | `hero.subheadline` | string | 副标题/补充说明 |
-| `hero.cover_image` | string | Hero 背景图片路径（相对或绝对路径） |
 
 **示例：**
 ```json
 {
   "hero": {
     "headline": "AI Agent 开发指南",
-    "subheadline": "构建可靠、可扩展的智能体系统",
-    "cover_image": "/images/ai-agents-cover.jpg"
+    "subheadline": "构建可靠、可扩展的智能体系统"
   }
 }
 ```
 
 ---
 
-## 三、Spokes 手动指定模式
+## 四、Spokes 手动指定模式
 
-手动指定要聚合的文章列表，支持 **内部文章** 和 **外部链接** 两种类型。
+手动指定要聚合的文章列表。**仅支持内部文章**，不支持外部链接。
 
-### 3.1 内部文章（通过 slug 匹配）
+### 4.1 内部文章（通过 slug 精确匹配）
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `slug` | string | ✓ | 文章的 slug（匹配 `posts/` 目录下的文件） |
+| `slug` | string | ✓ | 文章的 slug，**精确匹配**文章 frontmatter 中的 `slug` 字段或文件路径（不含扩展名） |
 | `custom_title` | string | - | 自定义显示标题（覆盖原文章标题） |
 | `custom_description` | string | - | 自定义显示描述（覆盖原文章描述） |
 
@@ -93,38 +110,15 @@ Hero 是页面顶部的标题展示区，包含大标题和副标题。
 }
 ```
 
-> 💡 `slug` 匹配规则：精确匹配 → 模糊匹配（包含关系）→ 忽略大小写匹配
-
-### 3.2 外部链接（非博客文章）
-
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `title` | string | ✓ | 链接标题 |
-| `url` | string | ✓ | 链接地址（完整 URL） |
-| `description` | string | - | 链接描述 |
-| `is_external` | boolean | - | 是否标记为外部链接（默认 `true`，可省略） |
-
-**示例：**
-```json
-{
-  "spokes": [
-    {
-      "title": "Anthropic Agent 研究论文",
-      "url": "https://anthropic.com/research/agents",
-      "description": "Anthropic 官方发布的 Agent 架构研究"
-    },
-    {
-      "title": "LangChain 官方文档",
-      "url": "https://python.langchain.com/docs/",
-      "description": "LangChain 框架完整使用指南"
-    }
-  ]
-}
-```
+> ⚠️ **匹配规则**：`slug` 必须与以下两者之一**精确匹配**：
+> 1. 文章 frontmatter 中的 `slug` 字段（如 `slug: "533"`）
+> 2. 文章文件路径（不含 `.md`/`.mdx` 扩展名，如 `OLD-ARTICLES/私有化部署/极简云盘...`）
+>
+> 不支持子串匹配、模糊匹配或忽略大小写匹配。如果 slug 填错，该 spoke 将被静默跳过。
 
 ---
 
-## 四、Auto_Spokes 自动筛选模式
+## 五、Auto_Spokes 自动筛选模式
 
 自动从博客文章库中筛选符合条件的文章，无需手动逐条指定。
 
@@ -162,57 +156,42 @@ Hero 是页面顶部的标题展示区，包含大标题和副标题。
 }
 ```
 
-> ⚠️ **注意**：`spokes` 和 `auto_spokes` 可同时使用，结果会合并显示。若两者都未配置，页面将只显示 Hero 区域。
+> ⚠️ **注意**：`spokes` 和 `auto_spokes` 可同时使用，结果会合并去重。若两者都未配置，页面将只显示 Hero 区域。
 
 ---
 
-## 五、Config 显示配置
+## 六、Config 显示配置
 
-控制 Spoke 卡片的展示样式和信息。
+控制 Hub 页面的额外展示选项。
 
 | 字段 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
-| `show_publish_date` | boolean | `true` | 是否显示发布日期 |
-| `show_reading_time` | boolean | `true` | 是否显示预估阅读时长 |
-| `show_tags` | boolean | `true` | 是否显示文章标签 |
-| `external_link_icon` | boolean | `true` | 外部链接是否显示图标标识 |
-| `grid_layout` | boolean | `false` | 是否使用网格布局（`false` = 列表布局） |
+| `show_reading_time` | boolean | `true` | 是否在 Hero 统计栏中显示"预计阅读 X 分钟" |
 
-**示例：网格布局**
+> ⚠️ **发布日期和标签始终显示**：Spoke 卡片（PostCard 组件）始终渲染发布日期和标签，不受 config 控制。
+
+**示例：**
 ```json
 {
   "config": {
-    "show_publish_date": true,
-    "show_reading_time": true,
-    "show_tags": true,
-    "grid_layout": true
-  }
-}
-```
-
-**示例：列表布局（精简信息）**
-```json
-{
-  "config": {
-    "show_publish_date": false,
-    "show_reading_time": false,
-    "show_tags": false,
-    "grid_layout": false
+    "show_reading_time": true
   }
 }
 ```
 
 ---
 
-## 六、完整配置示例
+## 七、完整配置示例
 
-### 示例 1：纯手动指定（网格布局）
+### 示例 1：纯手动指定
 
 ```json
 {
   "title": "AI Agent 开发指南",
   "description": "从架构设计到实战部署，构建可靠、可扩展的 AI Agent 系统",
   "slug": "ai-agents",
+  "icon": "material-symbols:smart-toy",
+  "keywords": ["AI Agent", "智能体", "架构设计"],
   "hero": {
     "headline": "AI Agent 开发指南",
     "subheadline": "构建可靠、可扩展的智能体系统"
@@ -227,33 +206,22 @@ Hero 是页面顶部的标题展示区，包含大标题和副标题。
     {
       "slug": "hermes-agent-vs-openclaw-comparison",
       "custom_title": "Hermes Agent vs OpenClaw 对比分析"
-    },
-    {
-      "slug": "long-context-safety-guardrails",
-      "custom_title": "长上下文模型的安全边界"
-    },
-    {
-      "title": "LangChain 官方文档",
-      "url": "https://python.langchain.com/docs/",
-      "description": "LangChain 框架完整使用指南"
     }
   ],
   "config": {
-    "show_publish_date": true,
-    "show_reading_time": true,
-    "show_tags": true,
-    "grid_layout": true
+    "show_reading_time": true
   }
 }
 ```
 
-### 示例 2：自动筛选（列表布局）
+### 示例 2：自动筛选
 
 ```json
 {
   "title": "SEO 完整指南",
   "description": "系统掌握搜索引擎优化方法论",
   "slug": "seo-guide",
+  "icon": "material-symbols:travel-explore",
   "hero": {
     "headline": "SEO 完整指南",
     "subheadline": "技术SEO、内容策略、外链建设全覆盖"
@@ -266,10 +234,7 @@ Hero 是页面顶部的标题展示区，包含大标题和副标题。
     "limit": 15
   },
   "config": {
-    "show_publish_date": true,
-    "show_reading_time": true,
-    "show_tags": true,
-    "grid_layout": false
+    "show_reading_time": true
   }
 }
 ```
@@ -281,6 +246,7 @@ Hero 是页面顶部的标题展示区，包含大标题和副标题。
   "title": "博客搭建指南",
   "description": "从零开始搭建个人技术博客",
   "slug": "blog-setup",
+  "icon": "material-symbols:web-stories",
   "hero": {
     "headline": "博客搭建完整指南",
     "subheadline": "Astro + MDX + Tailwind CSS 技术栈"
@@ -303,33 +269,26 @@ Hero 是页面顶部的标题展示区，包含大标题和副标题。
     "limit": 5
   },
   "config": {
-    "show_publish_date": true,
-    "show_reading_time": false,
-    "show_tags": true,
-    "grid_layout": true
+    "show_reading_time": true
   }
 }
 ```
 
 ---
 
-## 七、常见问题
+## 八、常见问题
 
 ### Q1：slug 匹配不到文章怎么办？
 
 检查以下几点：
-1. `slug` 是否与文章文件名一致（不含 `.md` / `.mdx`）
-2. 文章是否在 `src/content/posts/` 目录下
-3. 文章 frontmatter 是否有 `slug` 字段（若存在，需匹配该字段而非文件名）
+1. `slug` 是否与文章 frontmatter 中的 `slug` 字段完全一致（区分大小写）
+2. 若文章没有 frontmatter `slug`，是否与文件路径（不含 `.md`/`.mdx`）完全一致
+3. 文章是否在 `src/content/posts/` 目录下
+4. 文章是否被标记为 `draft: true`（生产环境不显示草稿）
 
 ### Q2：如何区分内部文章和外部链接？
 
-| 类型 | 必填字段 | 标识 |
-|------|----------|------|
-| 内部文章 | `slug` | 自动解析文章数据 |
-| 外部链接 | `title` + `url` | 显示外部链接图标 |
-
-> 不能同时使用 `slug` 和 `url`，两者互斥。
+**Hub 仅支持内部文章**（通过 `slug` 匹配）。不支持外部链接。
 
 ### Q3：auto_spokes 筛选逻辑是什么？
 
@@ -337,17 +296,48 @@ Hero 是页面顶部的标题展示区，包含大标题和副标题。
 - `category` AND `tags`（同时满足）
 - `tags` 数组内部为 OR 关系（任意一个标签匹配即可）
 
+### Q4：为什么 Hub 页面的布局不由 config 控制？
+
+Hub 页面使用全局的 `siteConfig.postListLayout` 控制布局（列表/网格/瀑布流），所有 Hub 页面共用同一套布局配置。这是为了保持全站布局一致性。
+
+### Q5：spokes 和 auto_spokes 合并后如何排序？
+
+合并后的最终排序规则为：
+1. **置顶文章优先**：`pinned: true` 的文章排在最前面（按 `updated` 日期降序）
+2. **其余按发布日期降序**：非置顶文章按 `published` 日期从新到旧排列
+
+`auto_spokes` 内部的 `sort_by`/`order` 仅影响自动筛选阶段的临时排序，最终合并后的全局排序仍遵循上述规则。
+
 ---
 
-## 八、文件位置与命名规范
+## 九、文件位置与命名规范
 
 | 项目 | 说明 |
 |------|------|
 | 配置目录 | `src/content/hubs/` |
 | 文件格式 | JSON（`.json`） |
-| 文件命名 | 与 `slug` 字段一致，如 `ai-agents.json` |
+| 文件命名 | 建议与 `slug` 字段一致，如 `ai-agents.json` |
 | 生成路径 | `/hubs/{slug}/`（如 `/hubs/ai-agents/`） |
 
 ---
 
-*文档版本：v1.0 | 更新日期：2026-04-23*
+## 附录：字段支持状态总览
+
+| 字段 | Schema | 代码使用 | 状态 |
+|------|--------|----------|------|
+| `title` | ✓ | ✓ | ✅ 支持 |
+| `description` | ✓ | ✓ | ✅ 支持 |
+| `slug` | ✓ | ✓ | ✅ 支持 |
+| `icon` | ✓ | ✓ | ✅ 支持 |
+| `keywords` | ✓ | ✓ | ✅ 支持 |
+| `hero.headline` | ✓ | ✓ | ✅ 支持 |
+| `hero.subheadline` | ✓ | ✓ | ✅ 支持 |
+| `spokes[].slug` | ✓ | ✓ | ✅ 支持（必填） |
+| `spokes[].custom_title` | ✓ | ✓ | ✅ 支持 |
+| `spokes[].custom_description` | ✓ | ✓ | ✅ 支持 |
+| `auto_spokes.*` | ✓ | ✓ | ✅ 支持 |
+| `config.show_reading_time` | ✓ | ✓ | ✅ 支持 |
+
+---
+
+*文档版本：v3.0 | 更新日期：2026-06-02*

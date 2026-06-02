@@ -20,10 +20,9 @@ interface Props {
       hero?: {
         headline?: string;
         subheadline?: string;
-        cover_image?: string;
       };
       spokes?: Array<{
-        slug?: string;
+        slug: string;
         custom_title?: string;
         custom_description?: string;
       }>;
@@ -36,11 +35,7 @@ interface Props {
         limit?: number;
       };
       config?: {
-        show_publish_date?: boolean;
         show_reading_time?: boolean;
-        show_tags?: boolean;
-        sort_by?: 'default' | 'published' | 'updated';
-        order?: 'asc' | 'desc';
       };
     };
   };
@@ -158,9 +153,7 @@ spokeArticles = spokeArticles.sort((a, b) => {
 
 // 配置默认值
 const config = {
-  show_publish_date: data.config?.show_publish_date ?? true,
   show_reading_time: data.config?.show_reading_time ?? true,
-  show_tags: data.config?.show_tags ?? true,
 };
 
 // 分页切片
