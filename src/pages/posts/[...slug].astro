@@ -83,6 +83,12 @@ if (posterCoverUrl && posterCoverUrl.includes("/@fs/")) {
 	schemaImageUrl = new URL(posterCoverUrl, Astro.site).href;
 }
 
+// 计算封面图绝对 URL，用于 OG/twitter 回退（排除远程 API 图片）
+let coverImageUrl: string | undefined;
+if (posterCoverUrl && posterCoverUrl.startsWith("/")) {
+	coverImageUrl = new URL(posterCoverUrl, Astro.site).toString();
+}
+
 dayjs.extend(utc);
 
 // 作者社交链接（过滤 http 开头，排除 mailto 和相对路径）
@@ -171,6 +177,7 @@ const belongingHubs = siteConfig.pages.hubs.enabled ? await getHubsForPost(entry
   lang={entry.data.lang}
   setOGTypeArticle={true}
   postSlug={entry.id}
+  coverImageUrl={coverImageUrl}
   headings={headings}
 >
   <!-- KaTeX 按需加载 - 仅在文章页面 -->
